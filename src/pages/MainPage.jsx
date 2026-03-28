@@ -23,13 +23,16 @@ function MainPage({ onGoRegister, onGoSuccess, onGoFail }) {
       <section className="register-card">
         <div className="form-group">
           <label className="form-label">쿠폰 번호 입력</label>
-          <input
-            type="text"
-            className="form-input"
-            placeholder="11~12자리 번호를 입력하세요"
-            readOnly
-          />
-          <p className="form-help">하이픈(-) 없이 숫자만 입력해주세요.</p>
+          <div className="input-wrap">
+            <input
+              type="text"
+              className="form-input"
+              placeholder="11~12자리 번호를 입력하세요"
+              readOnly
+            />
+            <span className="input-icon" aria-hidden="true"></span>
+          </div>
+          <p className="form-text">하이픈(-) 없이 숫자만 입력해주세요.</p>
         </div>
 
         <div className="form-group">
@@ -40,22 +43,26 @@ function MainPage({ onGoRegister, onGoSuccess, onGoFail }) {
             placeholder="등록할 휴대폰번호를 입력하세요"
             readOnly
           />
-          <p className="form-help">본인 휴대폰번호를 '-' 없이 입력해주세요.</p>
+          <p className="form-text">본인 휴대폰번호를 '-' 없이 입력해주세요.</p>
         </div>
 
-        <div className="agree-row">
-          <span className="agree-row__check"></span>
-          <span className="agree-row__label">
-            개인정보 수집 및 이용 동의 <em>(필수)</em>
-          </span>
-          <button type="button" className="agree-row__link">
-            약관 보기
+        <div className="agree-list">
+          <div className="agree-item">
+            <span className="agree-check" aria-hidden="true"></span>
+            <span className="agree-label">
+              개인정보 수집 및 이용 동의 <em>(필수)</em>
+            </span>
+            <button type="button" className="agree-link">
+              약관 보기
+            </button>
+          </div>
+        </div>
+
+        <div className="button-area">
+          <button type="button" className="btn-primary" onClick={onGoRegister}>
+            등록하기
           </button>
         </div>
-
-        <button type="button" className="btn-primary" onClick={onGoRegister}>
-          등록하기
-        </button>
 
         <div className="dev-button-row">
           <button type="button" className="btn-chip" onClick={() => onGoSuccess("onepass")}>
@@ -82,12 +89,13 @@ function MainPage({ onGoRegister, onGoSuccess, onGoFail }) {
         <div className="info-card__content">
           <strong className="info-card__title">도움이 필요하신가요?</strong>
           <p className="info-card__desc">
-            쿠폰 번호가 올바르지 않거나 등록이 되지 않는 경우 고객센터(114)로 문의해 주세요.
+            쿠폰 번호가 올바르지 않거나 등록이 되지 않는 경우 고객센터(114)로 문의해주세요.
           </p>
         </div>
       </section>
 
       <section className="promo-banner">
+        <div className="promo-banner__dim"></div>
         <div className="promo-banner__text">
           <p className="promo-banner__eyebrow">T-Roaming Anywhere</p>
           <strong className="promo-banner__title">

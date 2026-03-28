@@ -2,7 +2,7 @@ import React from "react";
 
 function NoticeCard({ onOpenPopup }) {
   return (
-    <section className="info-card">
+    <section className="info-card info-card--notice">
       <div className="info-card__icon info-card__icon--blue" aria-hidden="true">
         i
       </div>
@@ -20,7 +20,8 @@ function NoticeCard({ onOpenPopup }) {
         </div>
 
         <p className="info-card__desc">
-          등록된 쿠폰은 취소가 불가능하며, 유효기간 내에 사용하셔야 합니다.
+          등록된 쿠폰은 취소가 불가하며, 유효기간 내에 사용하셔야 합니다. 타인에게 양도할 수
+          없는 상품일 수 있습니다.
         </p>
       </div>
     </section>
