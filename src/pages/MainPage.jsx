@@ -5,6 +5,10 @@ import NoticePopup from "../components/NoticePopup";
 function MainPage({ onGoRegister, onGoSuccess, onGoFail }) {
   const [isNoticeOpen, setIsNoticeOpen] = useState(false);
   const noticeItems = [];
+  const devSuccessPayload = {
+    couponNumber: "111122223333",
+    phoneNumber: "01012345678",
+  };
 
   return (
     <main className="page-content">
@@ -23,16 +27,12 @@ function MainPage({ onGoRegister, onGoSuccess, onGoFail }) {
       <section className="register-card">
         <div className="form-group">
           <label className="form-label">쿠폰 번호 입력</label>
-          <div className="input-wrap">
-            <input
-              type="text"
-              className="form-input"
-              placeholder="11~12자리 번호를 입력하세요"
-              readOnly
-            />
-            <span className="input-icon" aria-hidden="true"></span>
-          </div>
-          <p className="form-text">하이픈(-) 없이 숫자만 입력해주세요.</p>
+          <input
+            type="text"
+            className="form-input"
+            placeholder="11~12자리 번호를 입력하세요"
+            readOnly
+          />
         </div>
 
         <div className="form-group">
@@ -65,13 +65,35 @@ function MainPage({ onGoRegister, onGoSuccess, onGoFail }) {
         </div>
 
         <div className="dev-button-row">
-          <button type="button" className="btn-chip" onClick={() => onGoSuccess("onepass")}>
+          <button
+            type="button"
+            className="btn-chip"
+            onClick={() => onGoSuccess("onepass", devSuccessPayload)}
+          >
             완료(OnePass)
           </button>
-          <button type="button" className="btn-chip" onClick={() => onGoSuccess("baro")}>
+          <button
+            type="button"
+            className="btn-chip"
+            onClick={() =>
+              onGoSuccess("baro", {
+                couponNumber: "222233334444",
+                phoneNumber: "01098765432",
+              })
+            }
+          >
             완료(baro)
           </button>
-          <button type="button" className="btn-chip" onClick={() => onGoSuccess("voucher")}>
+          <button
+            type="button"
+            className="btn-chip"
+            onClick={() =>
+              onGoSuccess("voucher", {
+                couponNumber: "333344445555",
+                phoneNumber: "01024681357",
+              })
+            }
+          >
             완료(금액권)
           </button>
           <button type="button" className="btn-chip btn-chip--ghost" onClick={onGoFail}>

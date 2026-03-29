@@ -13,6 +13,10 @@ function App() {
   const [tab, setTab] = useState("register");
   const [page, setPage] = useState("home");
   const [successType, setSuccessType] = useState("onepass");
+  const [successInfo, setSuccessInfo] = useState({
+    couponNumber: "111122223333",
+    phoneNumber: "01012345678",
+  });
 
   const goRegisterHome = () => {
     setTab("register");
@@ -24,9 +28,12 @@ function App() {
     setPage("register");
   };
 
-  const goRegisterSuccess = (type) => {
+  const goRegisterSuccess = (type, payload) => {
     setTab("register");
     setSuccessType(type);
+    if (payload) {
+      setSuccessInfo(payload);
+    }
     setPage("success");
   };
 
@@ -71,6 +78,7 @@ function App() {
         return (
           <RegisterSuccessPage
             type={successType}
+            successInfo={successInfo}
             onBackHome={goRegisterHome}
             onGoHistory={goHistoryList}
           />

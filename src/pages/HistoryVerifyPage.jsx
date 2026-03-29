@@ -2,6 +2,9 @@ import React, { useState } from "react";
 
 function HistoryVerifyPage({ onVerified }) {
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [agreePrivacy, setAgreePrivacy] = useState(false);
+
+  const isEnabled = phoneNumber.trim().length >= 10 && agreePrivacy;
 
   return (
     <main className="page-content">
@@ -34,14 +37,29 @@ function HistoryVerifyPage({ onVerified }) {
           <p className="form-help">본인 휴대폰번호를 '-' 없이 입력해주세요.</p>
         </div>
 
-        <button
-          type="button"
-          className="btn-primary"
-          onClick={onVerified}
-          disabled={phoneNumber.trim().length < 10}
-        >
-          내역 조회하기
-        </button>
+        <label className="agree-row agree-row--interactive">
+          <input
+            type="checkbox"
+            checked={agreePrivacy}
+            onChange={(e) => setAgreePrivacy(e.target.checked)}
+          />
+          <span className="agree-row__check"></span>
+          <span className="agree-row__label">
+            개인정보 수집 및 이용 동의 <em>(필수)</em>
+          </span>
+          <span className="agree-row__link">약관 보기</span>
+        </label>
+
+        <div className="button-area">
+          <button
+            type="button"
+            className="btn-primary btn-primary--compact"
+            onClick={onVerified}
+            disabled={!isEnabled}
+          >
+            내역 조회하기
+          </button>
+        </div>
       </section>
     </main>
   );

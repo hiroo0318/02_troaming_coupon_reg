@@ -15,18 +15,23 @@ function RegisterPage({ onBackHome, onGoSuccess, onGoFail }) {
 
     if (!isEnabled) return;
 
+    const successPayload = {
+      couponNumber,
+      phoneNumber,
+    };
+
     if (couponNumber.startsWith("111")) {
-      onGoSuccess("onepass");
+      onGoSuccess("onepass", successPayload);
       return;
     }
 
     if (couponNumber.startsWith("222")) {
-      onGoSuccess("baro");
+      onGoSuccess("baro", successPayload);
       return;
     }
 
     if (couponNumber.startsWith("333")) {
-      onGoSuccess("voucher");
+      onGoSuccess("voucher", successPayload);
       return;
     }
 

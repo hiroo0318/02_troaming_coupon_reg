@@ -1,6 +1,6 @@
 import React from "react";
 
-function RegisterFailPage({ onRetry, onBackHome }) {
+function RegisterFailPage({ onBackHome }) {
   return (
     <main className="page-content">
       <section className="result-hero result-hero--fail">
@@ -24,10 +24,7 @@ function RegisterFailPage({ onRetry, onBackHome }) {
       </section>
 
       <div className="button-stack">
-        <button type="button" className="btn-primary" onClick={onRetry}>
-          다시 시도하기
-        </button>
-        <button type="button" className="btn-secondary" onClick={onBackHome}>
+        <button type="button" className="btn-secondary btn-secondary--compact" onClick={onBackHome}>
           메인으로 이동
         </button>
       </div>
