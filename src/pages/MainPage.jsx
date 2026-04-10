@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import AlertPopup from "../components/AlertPopup";
 import NoticeCard from "../components/NoticeCard";
 import NoticePopup from "../components/NoticePopup";
@@ -25,10 +25,11 @@ function formatPhoneNumber(value = "") {
   return value;
 }
 
-function MainPage({ onGoSuccess, onGoFail }) {
+function MainPage({ onSubmitRegister }) {
   const [isNoticeOpen, setIsNoticeOpen] = useState(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [couponNumber, setCouponNumber] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [agreePrivacy, setAgreePrivacy] = useState(false);
@@ -46,10 +47,6 @@ function MainPage({ onGoSuccess, onGoFail }) {
     "데이터 로밍, 음성통화, SMS/MMS 발신을 1회 이상 사용한 경우 기본 제공 혜택 잔여분의 이월 및 환불은 불가합니다.",
     "환불은 고객센터를 통해 가능하며, 미등록 쿠폰 또는 사용되지 않은 카드에 한해 수수료 차감 후 처리될 수 있습니다. 프로모션 또는 이벤트로 지급된 쿠폰은 환불이 불가합니다.",
   ];
-  const devSuccessPayload = {
-    couponNumber: "111122223333",
-    phoneNumber: "01012345678",
-  };
   const promoItems = [
     {
       id: "mobile-roaming",
@@ -65,41 +62,30 @@ function MainPage({ onGoSuccess, onGoFail }) {
     },
   ];
   const isEnabled =
-    couponNumber.trim().length >= 11 &&
-    couponNumber.trim().length <= 12 &&
+    couponNumber.trim().length >= 8 &&
+    couponNumber.trim().length <= 32 &&
     phoneNumber.trim().length >= 10 &&
     phoneNumber.trim().length <= 11 &&
     agreePrivacy;
 
   const handleSubmit = (event) => {
     event.preventDefault();
-
-    if (!isEnabled) return;
+    if (!isEnabled || isSubmitting) return;
     setIsConfirmOpen(true);
   };
 
-  const handleConfirmRegister = () => {
-    const successPayload = {
-      couponNumber,
-      phoneNumber,
-    };
-
-    if (couponNumber.startsWith("111")) {
-      onGoSuccess("onepass", successPayload);
-      return;
+  const handleConfirmRegister = async () => {
+    setIsSubmitting(true);
+    try {
+      await onSubmitRegister({
+        couponNumber,
+        phoneNumber,
+        agreePrivacy,
+      });
+    } finally {
+      setIsSubmitting(false);
+      setIsConfirmOpen(false);
     }
-
-    if (couponNumber.startsWith("222")) {
-      onGoSuccess("baro", successPayload);
-      return;
-    }
-
-    if (couponNumber.startsWith("333")) {
-      onGoSuccess("voucher", successPayload);
-      return;
-    }
-
-    onGoFail();
   };
 
   return (
@@ -128,8 +114,8 @@ function MainPage({ onGoSuccess, onGoFail }) {
               className="form-input"
               value={couponNumber}
               onChange={(event) => setCouponNumber(event.target.value.replace(/\D/g, ""))}
-              placeholder="11~12자리 번호를 입력하세요"
-              maxLength={12}
+              placeholder="쿠폰 번호를 입력하세요"
+              maxLength={32}
             />
           </div>
 
@@ -172,45 +158,8 @@ function MainPage({ onGoSuccess, onGoFail }) {
           </label>
 
           <div className="button-area">
-            <button type="submit" className="btn-primary" disabled={!isEnabled}>
-              등록하기
-            </button>
-          </div>
-
-          <div className="dev-button-row">
-            <button
-              type="button"
-              className="btn-chip"
-              onClick={() => onGoSuccess("onepass", devSuccessPayload)}
-            >
-              완료(OnePass)
-            </button>
-            <button
-              type="button"
-              className="btn-chip"
-              onClick={() =>
-                onGoSuccess("baro", {
-                  couponNumber: "222233334444",
-                  phoneNumber: "01098765432",
-                })
-              }
-            >
-              완료(baro)
-            </button>
-            <button
-              type="button"
-              className="btn-chip"
-              onClick={() =>
-                onGoSuccess("voucher", {
-                  couponNumber: "333344445555",
-                  phoneNumber: "01024681357",
-                })
-              }
-            >
-              완료(금액권)
-            </button>
-            <button type="button" className="btn-chip btn-chip--ghost" onClick={onGoFail}>
-              실패
+            <button type="submit" className="btn-primary" disabled={!isEnabled || isSubmitting}>
+              {isSubmitting ? "처리중..." : "등록하기"}
             </button>
           </div>
         </form>
@@ -242,7 +191,7 @@ function MainPage({ onGoSuccess, onGoFail }) {
           { label: "쿠폰번호", value: formatCouponNumber(couponNumber) },
         ]}
         secondaryText="다시 입력"
-        primaryText="등록하기"
+        primaryText={isSubmitting ? "처리중..." : "등록하기"}
         onSecondary={() => setIsConfirmOpen(false)}
         onPrimary={handleConfirmRegister}
       />

@@ -1,14 +1,12 @@
-import React from "react";
+﻿import React from "react";
 
-function RegisterFailPage({ onBackHome }) {
+function RegisterFailPage({ result, onBackHome }) {
   return (
     <main className="page-content">
       <section className="result-hero result-hero--fail">
         <div className="result-icon result-icon--fail">!</div>
         <h1 className="result-title">쿠폰 등록에 실패하였습니다.</h1>
-        <p className="result-desc">
-          이미 등록된 쿠폰이거나 유효하지 않은 번호입니다.
-        </p>
+        <p className="result-desc">{result?.errorMsg || result?.message || "등록 처리 중 문제가 발생했습니다."}</p>
       </section>
 
       <section className="info-card info-card--danger">

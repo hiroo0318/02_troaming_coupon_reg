@@ -1,19 +1,25 @@
-import React from "react";
+﻿import React from "react";
 
 function JoinCompletePage({ joinInfo, onBackHome, onGoHistory }) {
+  const alreadySubscribed = Boolean(joinInfo?.alreadySubscribed);
+  const title = alreadySubscribed ? "해당 요금제가 이미 가입되어 있습니다." : "요금제 가입이 완료되었습니다.";
+  const description =
+    joinInfo?.resultMessage ||
+    (alreadySubscribed
+      ? "선택한 로밍 요금제가 이미 가입된 상태로 확인되었습니다."
+      : "선택한 로밍 요금제 가입이 정상적으로 완료되었습니다.");
+
   return (
     <main className="page-content">
       <section className="result-hero result-hero--success">
         <div className="result-icon result-icon--success">✓</div>
-        <h1 className="result-title">요금제 가입이 완료되었습니다.</h1>
-        <p className="result-desc">
-          선택한 로밍 요금제 가입이 정상적으로 완료되었습니다.
-        </p>
+        <h1 className="result-title">{title}</h1>
+        <p className="result-desc">{description}</p>
       </section>
 
       <section className="info-card info-card--notice success-info-card">
         <div className="info-card__content">
-          <strong className="info-card__title">가입 완료 정보</strong>
+          <strong className="info-card__title">{alreadySubscribed ? "가입 확인 정보" : "가입 완료 정보"}</strong>
           <div className="success-info-list">
             <div className="success-info-item">
               <span className="success-info-item__label">상품명</span>

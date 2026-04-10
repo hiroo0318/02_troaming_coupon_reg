@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 
 function PromoBanner({ items = [] }) {
   const [activeIndex, setActiveIndex] = useState(0);

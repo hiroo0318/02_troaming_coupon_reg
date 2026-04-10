@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local env and temporary office files
+.env
+tmp/
+~$*
+*.tmp
+*.mock-backup

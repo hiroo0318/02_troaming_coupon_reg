@@ -1,12 +1,22 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import PrivacyConsentPopup from "../components/PrivacyConsentPopup";
 
-function HistoryVerifyPage({ onVerified }) {
+function HistoryVerifyPage({ initialPhoneNumber = "", onVerified }) {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
 
+  React.useEffect(() => {
+    setPhoneNumber(initialPhoneNumber);
+    setAgreePrivacy(Boolean(initialPhoneNumber));
+  }, [initialPhoneNumber]);
+
   const isEnabled = phoneNumber.trim().length >= 10 && agreePrivacy;
+
+  const handleLookup = () => {
+    if (!isEnabled) return;
+    onVerified({ phoneNumber, agreePrivacy });
+  };
 
   return (
     <main className="page-content">
@@ -18,7 +28,7 @@ function HistoryVerifyPage({ onVerified }) {
           휴대폰번호를 입력하세요.
         </h1>
         <p className="hero-desc">
-          등록 시 사용한 휴대폰번호를 입력하면 최근 등록 내역을 확인할 수 있습니다.
+          등록 시 사용한 휴대폰번호를 입력하면 다음 단계에서 인증번호 확인 후 내역을 조회할 수 있습니다.
         </p>
       </section>
 
@@ -65,10 +75,10 @@ function HistoryVerifyPage({ onVerified }) {
           <button
             type="button"
             className="btn-primary btn-primary--compact"
-            onClick={() => onVerified(phoneNumber)}
+            onClick={handleLookup}
             disabled={!isEnabled}
           >
-            내역 조회하기
+            다음
           </button>
         </div>
       </section>

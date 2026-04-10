@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import "./style.css";
 
 import BottomNav from "./components/BottomNav";
@@ -8,26 +8,19 @@ import RegisterSuccessPage from "./pages/RegisterSuccessPage";
 import RegisterFailPage from "./pages/RegisterFailPage";
 import HistoryVerifyPage from "./pages/HistoryVerifyPage";
 import HistoryListPage from "./pages/HistoryListPage";
-import SmsAuthPage from "./pages/SmsAuthPage";
+import SmsAuthServerPage from "./pages/SmsAuthServerPage";
+import { lookupHistory, submitRegistration, subscribeRoamingProduct } from "./lib/roamingApi";
 
 function App() {
   const [tab, setTab] = useState("register");
   const [page, setPage] = useState("home");
-  const [successType, setSuccessType] = useState("onepass");
-  const [successInfo, setSuccessInfo] = useState({
-    couponNumber: "111122223333",
-    phoneNumber: "01012345678",
-  });
-  const [smsAuthInfo, setSmsAuthInfo] = useState({
-    mode: "join",
-    phoneNumber: "01012345678",
-  });
-  const [joinInfo, setJoinInfo] = useState({
-    type: "onepass",
-    productName: "OnePass 500",
-    joinOptionLabel: "기간형",
-    detailLabel: "개시일",
-    detailValue: "2026. 04. 10 (금)",
+  const [registerResult, setRegisterResult] = useState(null);
+  const [joinInfo, setJoinInfo] = useState(null);
+  const [historyItems, setHistoryItems] = useState([]);
+  const [historyPhoneNumber, setHistoryPhoneNumber] = useState("");
+  const [historyRequest, setHistoryRequest] = useState({
+    phoneNumber: "",
+    agreePrivacy: false,
   });
 
   const goRegisterHome = () => {
@@ -35,23 +28,13 @@ function App() {
     setPage("home");
   };
 
-  const goRegisterSuccess = (type, payload) => {
-    setTab("register");
-    setSuccessType(type);
-    if (payload) {
-      setSuccessInfo(payload);
-    }
-    setPage("success");
-  };
-
-  const goRegisterFail = () => {
-    setTab("register");
-    setPage("fail");
-  };
-
-  const goHistoryVerify = () => {
+  const goHistoryVerify = (nextState) => {
     setTab("history");
     setPage("historyVerify");
+    setHistoryRequest({
+      phoneNumber: nextState?.phoneNumber ?? "",
+      agreePrivacy: nextState?.agreePrivacy ?? false,
+    });
   };
 
   const goHistoryList = () => {
@@ -59,51 +42,117 @@ function App() {
     setPage("historyList");
   };
 
-  const goJoinSmsAuth = (payload) => {
-    setTab("register");
-    if (payload) {
-      setJoinInfo(payload);
-    }
-    setSmsAuthInfo({
-      mode: "join",
-      phoneNumber: successInfo.phoneNumber,
-    });
-    setPage("smsAuth");
-  };
-
-  const goHistorySmsAuth = (phoneNumber) => {
-    setTab("history");
-    setSmsAuthInfo({
-      mode: "history",
-      phoneNumber,
-    });
-    setPage("smsAuth");
-  };
-
-  const handleSmsVerified = () => {
-    if (smsAuthInfo.mode === "history") {
-      goHistoryList();
-      return;
-    }
-
+  const goJoinComplete = (payload) => {
+    setJoinInfo(payload);
     setTab("register");
     setPage("joinComplete");
+  };
+
+  const handleRegisterSubmit = async ({ couponNumber, phoneNumber, agreePrivacy }) => {
+    const result = await submitRegistration({
+      couponNumber,
+      phoneNumber,
+      agreePrivacy,
+    });
+
+    setRegisterResult(result);
+
+    if (result.regResult === "success") {
+      setPage("success");
+      return result;
+    }
+
+    setPage("fail");
+    return result;
+  };
+
+  const handleHistoryPrepare = ({ phoneNumber, agreePrivacy }) => {
+    setHistoryRequest({
+      phoneNumber,
+      agreePrivacy,
+    });
+    setTab("history");
+    setPage("historyPin");
+  };
+
+  const handleHistoryLookup = async () => {
+    const result = await lookupHistory({
+      phoneNumber: historyRequest.phoneNumber,
+      agreePrivacy: historyRequest.agreePrivacy,
+    });
+
+    setHistoryPhoneNumber(historyRequest.phoneNumber);
+    setHistoryItems(result.items ?? []);
+    goHistoryList();
+    return result;
+  };
+
+  const handleJoinAuthSuccess = async (payload) => {
+    try {
+      const subscribeResult = await subscribeRoamingProduct({
+        registrationId: registerResult?.id,
+        phoneNumber: registerResult?.phoneNumber,
+        couponNumber: registerResult?.couponNumber,
+        productCode: registerResult?.productCode,
+        category: registerResult?.category,
+        startMode: payload?.startMode,
+        useYt: Boolean(payload?.useYt),
+      });
+
+      goJoinComplete({
+        ...payload,
+        phoneNumber: registerResult?.phoneNumber,
+        alreadySubscribed: Boolean(subscribeResult?.alreadySubscribed),
+        resultMessage: subscribeResult?.message,
+        subscribeLogs: subscribeResult?.logs ?? [],
+      });
+    } catch (error) {
+      // 요금제 가입 실패 → 실패 페이지로 이동
+      setRegisterResult((prev) => ({
+        ...prev,
+        regResult: "fail",
+        errorMsg: error instanceof Error ? error.message : "요금제 가입 처리에 실패했습니다.",
+        message: error instanceof Error ? error.message : "요금제 가입 처리에 실패했습니다.",
+      }));
+      setPage("fail");
+    }
   };
 
   const renderPage = () => {
     if (tab === "register") {
       if (page === "home") {
-        return <MainPage onGoSuccess={goRegisterSuccess} onGoFail={goRegisterFail} />;
+        return <MainPage onSubmitRegister={handleRegisterSubmit} />;
       }
 
       if (page === "success") {
         return (
           <RegisterSuccessPage
-            type={successType}
-            successInfo={successInfo}
+            result={registerResult}
             onBackHome={goRegisterHome}
-            onGoHistory={goHistoryList}
-            onGoJoinAuth={goJoinSmsAuth}
+            onGoHistory={() =>
+              registerResult?.phoneNumber
+                ? handleHistoryPrepare({
+                    phoneNumber: registerResult.phoneNumber,
+                    agreePrivacy: true,
+                  })
+                : goHistoryVerify()
+            }
+            onGoJoinAuth={(payload) => {
+              setJoinInfo(payload);
+              setTab("register");
+              setPage("joinAuth");
+            }}
+          />
+        );
+      }
+
+      if (page === "joinAuth") {
+        return (
+          <SmsAuthServerPage
+            mode="join"
+            phoneNumber={registerResult?.phoneNumber || ""}
+            onBack={() => setPage("success")}
+            onVerified={() => handleJoinAuthSuccess(joinInfo)}
           />
         );
       }
@@ -113,45 +162,52 @@ function App() {
           <JoinCompletePage
             joinInfo={joinInfo}
             onBackHome={goRegisterHome}
-            onGoHistory={goHistoryList}
-          />
-        );
-      }
-
-      if (page === "smsAuth") {
-        return (
-          <SmsAuthPage
-            mode={smsAuthInfo.mode}
-            phoneNumber={smsAuthInfo.phoneNumber}
-            onBack={() => setPage("success")}
-            onVerified={handleSmsVerified}
+            onGoHistory={() =>
+              registerResult?.phoneNumber
+                ? handleHistoryPrepare({
+                    phoneNumber: registerResult.phoneNumber,
+                    agreePrivacy: true,
+                  })
+                : goHistoryVerify()
+            }
           />
         );
       }
 
       if (page === "fail") {
-        return <RegisterFailPage onBackHome={goRegisterHome} />;
+        return <RegisterFailPage result={registerResult} onBackHome={goRegisterHome} />;
       }
     }
 
     if (tab === "history") {
       if (page === "historyVerify") {
-        return <HistoryVerifyPage onVerified={goHistorySmsAuth} />;
+        return (
+          <HistoryVerifyPage
+            initialPhoneNumber={historyRequest.phoneNumber}
+            onVerified={handleHistoryPrepare}
+          />
+        );
       }
 
-      if (page === "smsAuth") {
+      if (page === "historyPin") {
         return (
-          <SmsAuthPage
-            mode={smsAuthInfo.mode}
-            phoneNumber={smsAuthInfo.phoneNumber}
-            onBack={goHistoryVerify}
-            onVerified={handleSmsVerified}
+          <SmsAuthServerPage
+            mode="history"
+            phoneNumber={historyRequest.phoneNumber}
+            onBack={() => setPage("historyVerify")}
+            onVerified={handleHistoryLookup}
           />
         );
       }
 
       if (page === "historyList") {
-        return <HistoryListPage phoneNumber={smsAuthInfo.phoneNumber} />;
+        return (
+          <HistoryListPage
+            phoneNumber={historyPhoneNumber}
+            historyItems={historyItems}
+            onBack={goHistoryVerify}
+          />
+        );
       }
     }
 
