@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import AlertPopup from "../components/AlertPopup";
 import baro6GbThumb from "../assets/coupon-thumbnails/baro-6gb.png";
 import onePass500Thumb from "../assets/coupon-thumbnails/onepass-500.png";
 import voucherThumb from "../assets/coupon-thumbnails/voucher.png";
@@ -70,10 +71,11 @@ function startOfDay(date) {
 function RegisterSuccessPage({ type, successInfo, onBackHome, onGoHistory, onGoJoinAuth }) {
   const today = startOfDay(new Date());
   const maxSelectableDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 60);
-  const [onePassStartMode, setOnePassStartMode] = useState("period");
+  const [onePassStartMode, setOnePassStartMode] = useState("basic");
   const [baroStartMode, setBaroStartMode] = useState("auto");
   const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
+  const [isPreparingAlertOpen, setIsPreparingAlertOpen] = useState(false);
   const [onePassSelectedDate, setOnePassSelectedDate] = useState(today);
   const [onePassVisibleMonth, setOnePassVisibleMonth] = useState(
     new Date(today.getFullYear(), today.getMonth(), 1),
@@ -313,7 +315,7 @@ function RegisterSuccessPage({ type, successInfo, onBackHome, onGoHistory, onGoJ
                 className={`segmented-control__button ${
                   onePassStartMode === "period" ? "is-active" : ""
                 }`}
-                onClick={() => setOnePassStartMode("period")}
+                onClick={() => setIsPreparingAlertOpen(true)}
               >
                 기간형
               </button>
@@ -519,6 +521,14 @@ function RegisterSuccessPage({ type, successInfo, onBackHome, onGoHistory, onGoJ
         open={isPrivacyOpen}
         onClose={() => setIsPrivacyOpen(false)}
         variant="join"
+      />
+      <AlertPopup
+        open={isPreparingAlertOpen}
+        onClose={() => setIsPreparingAlertOpen(false)}
+        title="준비중입니다."
+        description="OnePass 기간형 요금제 가입은 현재 준비중입니다."
+        primaryText="확인"
+        onPrimary={() => setIsPreparingAlertOpen(false)}
       />
     </main>
   );

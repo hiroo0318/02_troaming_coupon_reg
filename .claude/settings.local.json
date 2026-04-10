@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pandoc --track-changes=all \"D:/00 업무/00 VS Code/01 T로밍쿠폰 등록 페이지/01 개발 요건 정리/요건서_v0.1.docx\" -o /tmp/requirements.md)",
+      "Read(//tmp/**)",
+      "Bash(python3 -c ':*)"
+    ]
+  }
+}
