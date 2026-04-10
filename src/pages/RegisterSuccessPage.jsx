@@ -1,17 +1,8 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import baro6GbThumb from "../assets/coupon-thumbnails/baro-6gb.png";
 import onePass500Thumb from "../assets/coupon-thumbnails/onepass-500.png";
 import voucherThumb from "../assets/coupon-thumbnails/voucher.png";
-
-const onePassDates = [
-  { day: "12", active: true },
-  { day: "13" },
-  { day: "14" },
-  { day: "15" },
-  { day: "16" },
-  { day: "17" },
-  { day: "18" },
-];
+import PrivacyConsentPopup from "../components/PrivacyConsentPopup";
 
 function formatCouponNumber(value = "") {
   return value.replace(/\D/g, "").replace(/(.{4})/g, "$1 ").trim();
@@ -31,10 +22,63 @@ function formatPhoneNumber(value = "") {
   return value;
 }
 
-function RegisterSuccessPage({ type, successInfo, onBackHome, onGoHistory }) {
+function formatCalendarMonth(date) {
+  return `${date.getFullYear()}년 ${date.getMonth() + 1}월`;
+}
+
+function formatSelectedDate(date) {
+  const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}. ${month}. ${day} (${weekdays[date.getDay()]})`;
+}
+
+function buildCalendarDays(date) {
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cells = [];
+
+  for (let index = 0; index < firstDay; index += 1) {
+    cells.push({ key: `empty-${index}`, empty: true });
+  }
+
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    cells.push({
+      key: `day-${day}`,
+      day,
+      selected: day === date.getDate(),
+    });
+  }
+
+  while (cells.length % 7 !== 0) {
+    cells.push({ key: `tail-${cells.length}`, empty: true });
+  }
+
+  return cells;
+}
+
+function isSameMonth(left, right) {
+  return left.getFullYear() === right.getFullYear() && left.getMonth() === right.getMonth();
+}
+
+function startOfDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function RegisterSuccessPage({ type, successInfo, onBackHome, onGoHistory, onGoJoinAuth }) {
+  const today = startOfDay(new Date());
+  const maxSelectableDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 60);
   const [onePassStartMode, setOnePassStartMode] = useState("period");
   const [baroStartMode, setBaroStartMode] = useState("auto");
   const [agreePrivacy, setAgreePrivacy] = useState(false);
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
+  const [onePassSelectedDate, setOnePassSelectedDate] = useState(today);
+  const [onePassVisibleMonth, setOnePassVisibleMonth] = useState(
+    new Date(today.getFullYear(), today.getMonth(), 1),
+  );
+  const [isThumbError, setIsThumbError] = useState(false);
 
   const contentMap = {
     onepass: {
@@ -84,16 +128,45 @@ function RegisterSuccessPage({ type, successInfo, onBackHome, onGoHistory }) {
       productMeta: ["등록 즉시 사용 가능", "후속 가입 불필요"],
       voucherNotes: [
         "해외 로밍 이용 요금 결제 시 등록된 금액권에서 우선 차감됩니다.",
-        "금액권 잔액과 사용 내역은 등록 내역 화면에서 확인할 수 있습니다.",
+        "금액권 정보와 사용 내역은 등록 내역 화면에서 확인할 수 있습니다.",
       ],
       productThumb: voucherThumb,
     },
   };
 
   const content = contentMap[type] || contentMap.onepass;
+  useEffect(() => {
+    setIsThumbError(false);
+  }, [type]);
   const isJoinActionEnabled = type === "voucher" || agreePrivacy;
   const couponNumberText = formatCouponNumber(successInfo?.couponNumber || "");
   const phoneNumberText = formatPhoneNumber(successInfo?.phoneNumber || "");
+  const calendarDays = buildCalendarDays(onePassVisibleMonth).map((item) => {
+    if (item.empty) return item;
+
+    const itemDate = new Date(
+      onePassVisibleMonth.getFullYear(),
+      onePassVisibleMonth.getMonth(),
+      item.day,
+    );
+    const itemTime = itemDate.getTime();
+    const isDisabled = itemTime < today.getTime() || itemTime > maxSelectableDate.getTime();
+
+    return {
+      ...item,
+      selected:
+        item.day === onePassSelectedDate.getDate() && isSameMonth(onePassVisibleMonth, onePassSelectedDate),
+      disabled: isDisabled,
+    };
+  });
+  const canGoPrevMonth =
+    onePassVisibleMonth.getFullYear() > today.getFullYear() ||
+    (onePassVisibleMonth.getFullYear() === today.getFullYear() &&
+      onePassVisibleMonth.getMonth() > today.getMonth());
+  const canGoNextMonth =
+    onePassVisibleMonth.getFullYear() < maxSelectableDate.getFullYear() ||
+    (onePassVisibleMonth.getFullYear() === maxSelectableDate.getFullYear() &&
+      onePassVisibleMonth.getMonth() < maxSelectableDate.getMonth());
 
   const handlePrimaryAction = () => {
     if (type === "voucher") {
@@ -101,7 +174,28 @@ function RegisterSuccessPage({ type, successInfo, onBackHome, onGoHistory }) {
       return;
     }
 
-    onBackHome();
+    if (type === "onepass") {
+      onGoJoinAuth({
+        type,
+        productName: content.productName,
+        joinOptionLabel: onePassStartMode === "period" ? "기간형" : "기본형",
+        detailLabel: onePassStartMode === "period" ? "개시일" : "적용 시점",
+        detailValue:
+          onePassStartMode === "period"
+            ? formatSelectedDate(onePassSelectedDate)
+            : "현지 첫 데이터 사용 시점",
+      });
+      return;
+    }
+
+    onGoJoinAuth({
+      type,
+      productName: content.productName,
+      joinOptionLabel: baroStartMode === "auto" ? "자동 개시" : "수동 개시",
+      detailLabel: "개시 방식",
+      detailValue:
+        baroStartMode === "auto" ? "현지 도착 시 자동 시작" : "원하는 시점에 직접 시작",
+    });
   };
 
   return (
@@ -120,8 +214,17 @@ function RegisterSuccessPage({ type, successInfo, onBackHome, onGoHistory }) {
               <p className="product-card__desc">{content.productDesc}</p>
             </div>
 
-            <div className="product-card__thumb">
-              <img src={content.productThumb} alt="" className="product-card__thumb-image" />
+            <div className={`product-card__thumb ${isThumbError ? "is-fallback" : ""}`}>
+              {!isThumbError ? (
+                <img
+                  src={content.productThumb}
+                  alt=""
+                  className="product-card__thumb-image"
+                  onError={() => setIsThumbError(true)}
+                />
+              ) : (
+                <span className="product-card__thumb-fallback">{content.productName}</span>
+              )}
             </div>
           </div>
 
@@ -227,18 +330,52 @@ function RegisterSuccessPage({ type, successInfo, onBackHome, onGoHistory }) {
           </div>
 
           <p className="join-card__subtext">
-            기간형은 개시일을 지정해 시작하고, 기본형은 현지 첫 사용 시점부터 혜택이 적용됩니다.
+            {onePassStartMode === "period"
+              ? "선택한 개시일부터 OnePass 혜택이 적용됩니다."
+              : "현지에서 처음 데이터를 사용한 시점부터 OnePass 혜택이 적용됩니다."}
           </p>
 
           {onePassStartMode === "period" ? (
             <div className="calendar-card">
               <div className="calendar-card__head">
-                <strong className="calendar-card__month">2024년 5월</strong>
+                <strong className="calendar-card__month">
+                  {formatCalendarMonth(onePassVisibleMonth)}
+                </strong>
                 <div className="calendar-card__nav">
-                  <button type="button" className="calendar-card__arrow" aria-label="이전 달">
+                  <button
+                    type="button"
+                    className="calendar-card__arrow"
+                    aria-label="이전 달"
+                    onClick={() =>
+                      canGoPrevMonth &&
+                      setOnePassVisibleMonth(
+                        new Date(
+                          onePassVisibleMonth.getFullYear(),
+                          onePassVisibleMonth.getMonth() - 1,
+                          1,
+                        ),
+                      )
+                    }
+                    disabled={!canGoPrevMonth}
+                  >
                     ‹
                   </button>
-                  <button type="button" className="calendar-card__arrow" aria-label="다음 달">
+                  <button
+                    type="button"
+                    className="calendar-card__arrow"
+                    aria-label="다음 달"
+                    onClick={() =>
+                      canGoNextMonth &&
+                      setOnePassVisibleMonth(
+                        new Date(
+                          onePassVisibleMonth.getFullYear(),
+                          onePassVisibleMonth.getMonth() + 1,
+                          1,
+                        ),
+                      )
+                    }
+                    disabled={!canGoNextMonth}
+                  >
                     ›
                   </button>
                 </div>
@@ -255,31 +392,41 @@ function RegisterSuccessPage({ type, successInfo, onBackHome, onGoHistory }) {
               </div>
 
               <div className="calendar-card__days">
-                {onePassDates.map((item) => (
-                  <button
-                    key={item.day}
-                    type="button"
-                    className={`calendar-card__day ${item.active ? "is-active" : ""}`}
-                  >
-                    {item.day}
-                  </button>
-                ))}
+                {calendarDays.map((item) =>
+                  item.empty ? (
+                    <span key={item.key} className="calendar-card__day calendar-card__day--empty" />
+                  ) : (
+                    <button
+                      key={item.key}
+                      type="button"
+                      className={`calendar-card__day ${item.selected ? "is-active" : ""} ${
+                        item.disabled ? "is-disabled" : ""
+                      }`}
+                      disabled={item.disabled}
+                      onClick={() =>
+                        setOnePassSelectedDate(
+                          new Date(
+                            onePassVisibleMonth.getFullYear(),
+                            onePassVisibleMonth.getMonth(),
+                            item.day,
+                          ),
+                        )
+                      }
+                    >
+                      {item.day}
+                    </button>
+                  ),
+                )}
               </div>
 
               <div className="calendar-card__footer">
                 <span className="calendar-card__label">선택한 개시일</span>
-                <strong className="calendar-card__value">2024. 05. 12 (일)</strong>
+                <strong className="calendar-card__value">
+                  {formatSelectedDate(onePassSelectedDate)}
+                </strong>
               </div>
             </div>
-          ) : (
-            <p className="join-card__hint">
-              기본형을 선택하면 현지에서 처음 데이터를 사용한 시점부터 하루 단위로 혜택이 시작됩니다.
-            </p>
-          )}
-
-          <p className="join-card__notice">
-            기간형은 선택한 날짜부터, 기본형은 현지 최초 사용 시점부터 OnePass 혜택이 적용됩니다.
-          </p>
+          ) : null}
 
           <label className="agree-row agree-row--interactive join-card__agree">
             <input
@@ -291,7 +438,16 @@ function RegisterSuccessPage({ type, successInfo, onBackHome, onGoHistory }) {
             <span className="agree-row__label">
               개인정보 수집 및 이용 동의 <em>(필수)</em>
             </span>
-            <span className="agree-row__link">약관 보기</span>
+            <button
+              type="button"
+              className="agree-row__link"
+              onClick={(event) => {
+                event.preventDefault();
+                setIsPrivacyOpen(true);
+              }}
+            >
+              상세보기
+            </button>
           </label>
         </section>
       )}
@@ -335,7 +491,16 @@ function RegisterSuccessPage({ type, successInfo, onBackHome, onGoHistory }) {
             <span className="agree-row__label">
               개인정보 수집 및 이용 동의 <em>(필수)</em>
             </span>
-            <span className="agree-row__link">약관 보기</span>
+            <button
+              type="button"
+              className="agree-row__link"
+              onClick={(event) => {
+                event.preventDefault();
+                setIsPrivacyOpen(true);
+              }}
+            >
+              상세보기
+            </button>
           </label>
         </section>
       )}
@@ -350,6 +515,11 @@ function RegisterSuccessPage({ type, successInfo, onBackHome, onGoHistory }) {
           {content.buttonText}
         </button>
       </div>
+      <PrivacyConsentPopup
+        open={isPrivacyOpen}
+        onClose={() => setIsPrivacyOpen(false)}
+        variant="join"
+      />
     </main>
   );
 }

@@ -1,9 +1,11 @@
 import React, { useState } from "react";
+import PrivacyConsentPopup from "../components/PrivacyConsentPopup";
 
 function RegisterPage({ onBackHome, onGoSuccess, onGoFail }) {
   const [couponNumber, setCouponNumber] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [agreePrivacy, setAgreePrivacy] = useState(false);
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
 
   const isEnabled =
     couponNumber.trim().length >= 11 &&
@@ -96,7 +98,16 @@ function RegisterPage({ onBackHome, onGoSuccess, onGoFail }) {
             <span className="agree-row__label">
               개인정보 수집 및 이용 동의 <em>(필수)</em>
             </span>
-            <span className="agree-row__link">약관 보기</span>
+            <button
+              type="button"
+              className="agree-row__link"
+              onClick={(event) => {
+                event.preventDefault();
+                setIsPrivacyOpen(true);
+              }}
+            >
+              상세보기
+            </button>
           </label>
 
           <div className="button-stack">
@@ -109,6 +120,11 @@ function RegisterPage({ onBackHome, onGoSuccess, onGoFail }) {
           </div>
         </form>
       </section>
+      <PrivacyConsentPopup
+        open={isPrivacyOpen}
+        onClose={() => setIsPrivacyOpen(false)}
+        variant="register"
+      />
     </main>
   );
 }

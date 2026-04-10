@@ -1,6 +1,20 @@
 import React, { useState } from "react";
 
-function HistoryListPage() {
+function maskPhoneNumber(value = "") {
+  const digits = value.replace(/\D/g, "");
+
+  if (digits.length === 11) {
+    return `${digits.slice(0, 3)}-${digits.slice(3, 5)}**-${digits.slice(7)}`;
+  }
+
+  if (digits.length === 10) {
+    return `${digits.slice(0, 3)}-${digits.slice(3, 4)}**-${digits.slice(6)}`;
+  }
+
+  return "010-12**-3456";
+}
+
+function HistoryListPage({ phoneNumber }) {
   const [period, setPeriod] = useState("3개월");
   const historyItems = [
     {
@@ -33,7 +47,7 @@ function HistoryListPage() {
     <main className="page-content">
       <section className="history-summary">
         <h1 className="history-summary__title">
-          010-12**-3456 번호로 등록된 쿠폰입니다.
+          {maskPhoneNumber(phoneNumber)} 번호로 등록된 쿠폰입니다.
         </h1>
         <p className="history-summary__desc">{`최근 ${period} 내역과 등록 상태를 확인할 수 있습니다.`}</p>
       </section>

@@ -1,8 +1,10 @@
 import React, { useState } from "react";
+import PrivacyConsentPopup from "../components/PrivacyConsentPopup";
 
 function HistoryVerifyPage({ onVerified }) {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [agreePrivacy, setAgreePrivacy] = useState(false);
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
 
   const isEnabled = phoneNumber.trim().length >= 10 && agreePrivacy;
 
@@ -30,7 +32,7 @@ function HistoryVerifyPage({ onVerified }) {
             type="tel"
             className="form-input"
             value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
+            onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
             placeholder="조회할 휴대폰번호를 입력하세요"
             maxLength={11}
           />
@@ -47,20 +49,34 @@ function HistoryVerifyPage({ onVerified }) {
           <span className="agree-row__label">
             개인정보 수집 및 이용 동의 <em>(필수)</em>
           </span>
-          <span className="agree-row__link">약관 보기</span>
+          <button
+            type="button"
+            className="agree-row__link"
+            onClick={(event) => {
+              event.preventDefault();
+              setIsPrivacyOpen(true);
+            }}
+          >
+            상세보기
+          </button>
         </label>
 
         <div className="button-area">
           <button
             type="button"
             className="btn-primary btn-primary--compact"
-            onClick={onVerified}
+            onClick={() => onVerified(phoneNumber)}
             disabled={!isEnabled}
           >
             내역 조회하기
           </button>
         </div>
       </section>
+      <PrivacyConsentPopup
+        open={isPrivacyOpen}
+        onClose={() => setIsPrivacyOpen(false)}
+        variant="history"
+      />
     </main>
   );
 }
