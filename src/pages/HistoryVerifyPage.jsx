@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import PrivacyConsentPopup from "../components/PrivacyConsentPopup";
 
 function HistoryVerifyPage({ initialPhoneNumber = "", onVerified }) {
@@ -6,9 +6,9 @@ function HistoryVerifyPage({ initialPhoneNumber = "", onVerified }) {
   const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setPhoneNumber(initialPhoneNumber);
-    setAgreePrivacy(Boolean(initialPhoneNumber));
+    setAgreePrivacy(false);
   }, [initialPhoneNumber]);
 
   const isEnabled = phoneNumber.trim().length >= 10 && agreePrivacy;
@@ -42,7 +42,7 @@ function HistoryVerifyPage({ initialPhoneNumber = "", onVerified }) {
             type="tel"
             className="form-input"
             value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
+            onChange={(event) => setPhoneNumber(event.target.value.replace(/\D/g, ""))}
             placeholder="조회할 휴대폰번호를 입력하세요"
             maxLength={11}
           />
@@ -53,7 +53,7 @@ function HistoryVerifyPage({ initialPhoneNumber = "", onVerified }) {
           <input
             type="checkbox"
             checked={agreePrivacy}
-            onChange={(e) => setAgreePrivacy(e.target.checked)}
+            onChange={(event) => setAgreePrivacy(event.target.checked)}
           />
           <span className="agree-row__check"></span>
           <span className="agree-row__label">

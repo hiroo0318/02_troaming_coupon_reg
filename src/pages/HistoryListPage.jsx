@@ -1,4 +1,5 @@
 ﻿import React, { useMemo, useState } from "react";
+import { formatCouponNumber } from "../lib/format";
 
 function maskPhoneNumber(value = "") {
   const digits = value.replace(/\D/g, "");
@@ -12,10 +13,6 @@ function maskPhoneNumber(value = "") {
   }
 
   return "010-12**-3456";
-}
-
-function formatCouponNumber(value = "") {
-  return value.replace(/\D/g, "").replace(/(.{4})/g, "$1 ").trim();
 }
 
 function formatDate(value = "") {
@@ -39,7 +36,7 @@ function HistoryListPage({ phoneNumber, historyItems = [], onBack }) {
 
   const filteredItems = useMemo(() => {
     const limit = period === "3개월" ? 3 : period === "6개월" ? 6 : 12;
-    return historyItems.filter((item) => getMonthsDiff(item.registeredAt || item.createdAt) < limit);
+    return historyItems.filter((item) => getMonthsDiff(item.registeredAt) <= limit);
   }, [historyItems, period]);
 
   return (
@@ -80,15 +77,15 @@ function HistoryListPage({ phoneNumber, historyItems = [], onBack }) {
           filteredItems.map((item) => (
             <article className="history-card" key={item.id}>
               <div className="history-card__top">
-                <span className="history-card__category">{item.productCode || item.couponName || "쿠폰"}</span>
+                <span className="history-card__category">{item.productCode || "쿠폰"}</span>
                 <span
                   className={`history-card__status ${item.regResult !== "success" ? "history-card__status--refund" : ""}`}
                 >
                   {item.regResult === "success" ? "등록 완료" : "실패"}
                 </span>
               </div>
-              <strong className="history-card__name">{item.productName || item.couponName || "등록 상품"}</strong>
-              <p className="history-card__date">{formatDate(item.registeredAt || item.createdAt)}</p>
+              <strong className="history-card__name">{item.productName || "등록 상품"}</strong>
+              <p className="history-card__date">{formatDate(item.registeredAt)}</p>
               <div className="history-card__meta">
                 <span className="history-card__meta-item">쿠폰번호 {formatCouponNumber(item.couponNumber || "")}</span>
                 {item.errorMsg ? <span className="history-card__meta-item">사유 {item.errorMsg}</span> : null}

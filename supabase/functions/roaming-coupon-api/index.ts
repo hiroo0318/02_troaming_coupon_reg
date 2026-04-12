@@ -811,6 +811,7 @@ async function handleRegister(payload: JsonMap) {
         reg_result: "fail",
         status: "등록실패",
         error_msg: "T 로밍쿠폰은 SKT 가입자만 이용할 수 있습니다.",
+        registered_at: new Date().toISOString(),
       });
 
       return {
@@ -828,6 +829,7 @@ async function handleRegister(payload: JsonMap) {
         reg_result: "fail",
         status: "등록실패",
         error_msg: "T 로밍쿠폰은 만 18세 이상부터 이용 가능합니다.",
+        registered_at: new Date().toISOString(),
       });
 
       return {

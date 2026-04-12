@@ -1,19 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
+import { formatPhoneNumber } from "../lib/format";
 import { requestMockSmsAuth, verifyMockSmsAuth } from "../lib/roamingApi";
-
-function formatPhoneNumber(value = "") {
-  const digits = value.replace(/\D/g, "");
-
-  if (digits.length === 11) {
-    return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
-  }
-
-  if (digits.length === 10) {
-    return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
-  }
-
-  return value;
-}
 
 function formatRemainingTime(seconds) {
   const minute = String(Math.floor(seconds / 60)).padStart(2, "0");
@@ -33,12 +20,14 @@ function SmsAuthServerPage({ mode = "join", phoneNumber = "", onBack, onVerified
 
   const formattedPhoneNumber = formatPhoneNumber(phoneNumber);
   const purpose = mode === "join" ? "join" : "history";
-  const pageTitle =
-    mode === "join" ? "요금제 가입을 위해 SMS 인증을 진행하세요." : "등록 내역 조회를 위해 SMS 인증을 진행하세요.";
+  const pageTitleLines =
+    mode === "join"
+      ? ["요금제 가입을 위해", "SMS 인증을 진행하세요."]
+      : ["등록 내역 조회를 위해", "SMS 인증을 진행하세요."];
   const pageDesc =
     mode === "join"
-      ? "등록된 휴대폰번호로 인증번호를 발송해 본인 확인 후 가입을 진행합니다."
-      : "입력한 휴대폰번호로 인증번호를 발송해 본인 확인 후 등록 내역을 조회합니다.";
+      ? "등록한 휴대폰번호로 인증번호를 요청하고 인증을 완료하면 요금제 가입이 진행됩니다."
+      : "입력한 휴대폰번호로 인증번호를 요청하고 인증을 완료하면 등록 내역을 조회할 수 있습니다.";
 
   const remainingSeconds = useMemo(() => {
     if (!expiresAt) return 0;
@@ -108,9 +97,9 @@ function SmsAuthServerPage({ mode = "join", phoneNumber = "", onBack, onVerified
       <section className="hero hero--compact">
         <p className="hero-badge">SMS AUTH</p>
         <h1 className="hero-title hero-title--sm">
-          {pageTitle.split(" ").slice(0, -2).join(" ")}
+          {pageTitleLines[0]}
           <br />
-          {pageTitle.split(" ").slice(-2).join(" ")}
+          {pageTitleLines[1]}
         </h1>
         <p className="hero-desc">{pageDesc}</p>
       </section>
@@ -126,7 +115,7 @@ function SmsAuthServerPage({ mode = "join", phoneNumber = "", onBack, onVerified
           </div>
           <p className="form-help">
             {mode === "join"
-              ? "등록된 휴대폰번호로만 인증할 수 있습니다."
+              ? "등록한 휴대폰번호로만 인증할 수 있습니다."
               : "입력한 휴대폰번호로 인증번호를 발송합니다."}
           </p>
         </div>
@@ -148,9 +137,9 @@ function SmsAuthServerPage({ mode = "join", phoneNumber = "", onBack, onVerified
           <p className="form-help">
             {isCodeSent
               ? isExpired
-                ? "만료된 인증번호입니다. 인증번호를 재발송해주세요."
+                ? "만료된 인증번호입니다. 인증번호를 다시 요청해주세요."
                 : `${formatRemainingTime(remainingSeconds)} 내에 인증번호를 입력해주세요.`
-              : "먼저 인증번호를 요청한 후 확인을 진행해주세요."}
+              : "먼저 인증번호를 요청한 뒤 인증을 진행해주세요."}
           </p>
           {errorMessage ? <p className="form-help form-help--error">{errorMessage}</p> : null}
         </div>

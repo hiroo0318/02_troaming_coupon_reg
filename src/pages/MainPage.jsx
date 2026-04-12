@@ -4,26 +4,9 @@ import NoticeCard from "../components/NoticeCard";
 import NoticePopup from "../components/NoticePopup";
 import PrivacyConsentPopup from "../components/PrivacyConsentPopup";
 import PromoBanner from "../components/PromoBanner";
+import { formatCouponNumber, formatPhoneNumber } from "../lib/format";
 import promoBanner01 from "../assets/promo-banners/roaming-mobile-01.svg";
 import promoBanner02 from "../assets/promo-banners/roaming-mobile-02.svg";
-
-function formatCouponNumber(value = "") {
-  return value.replace(/\D/g, "").replace(/(.{4})/g, "$1 ").trim();
-}
-
-function formatPhoneNumber(value = "") {
-  const digits = value.replace(/\D/g, "");
-
-  if (digits.length === 11) {
-    return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
-  }
-
-  if (digits.length === 10) {
-    return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
-  }
-
-  return value;
-}
 
 function MainPage({ onSubmitRegister }) {
   const [isNoticeOpen, setIsNoticeOpen] = useState(false);

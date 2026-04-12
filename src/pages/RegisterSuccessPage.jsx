@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import AlertPopup from "../components/AlertPopup";
 import PrivacyConsentPopup from "../components/PrivacyConsentPopup";
+import { formatCouponNumber, formatPhoneNumber } from "../lib/format";
 import baro3GbThumb from "../assets/coupon-thumbnails/baro-3gb.png";
 import baro6GbThumb from "../assets/coupon-thumbnails/baro-6gb.png";
 import baro12GbThumb from "../assets/coupon-thumbnails/baro-12gb.png";
@@ -10,23 +11,15 @@ import onePassVipThumb from "../assets/coupon-thumbnails/onepass-vip.png";
 import onePassDataVipThumb from "../assets/coupon-thumbnails/onepass-data-vip.png";
 import voucherThumb from "../assets/coupon-thumbnails/voucher.png";
 
-function formatCouponNumber(value = "") {
-  return value.replace(/\D/g, "").replace(/(.{4})/g, "$1 ").trim();
-}
-
-function formatPhoneNumber(value = "") {
-  const digits = value.replace(/\D/g, "");
-
-  if (digits.length === 11) {
-    return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
-  }
-
-  if (digits.length === 10) {
-    return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
-  }
-
-  return value;
-}
+const PRODUCT_THUMB_MAP = {
+  onepass_500: onePass500Thumb,
+  onepass_vip: onePassVipThumb,
+  onepass_data_vip: onePassDataVipThumb,
+  baro_3gb: baro3GbThumb,
+  baro_6gb: baro6GbThumb,
+  baro_12gb: baro12GbThumb,
+  baro_24gb: baro24GbThumb,
+};
 
 function startOfDay(date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -82,7 +75,7 @@ function resolveType(result) {
   return "voucher";
 }
 
-function buildContent(type, result, productThumbMap) {
+function buildContent(type, result) {
   const productCode = String(result?.productCode ?? "").toLowerCase();
   const productName = result?.productName || "등록 상품";
   const couponCode = result?.couponCode || "-";
@@ -93,9 +86,9 @@ function buildContent(type, result, productThumbMap) {
       productName,
       productDesc:
         result?.message || "등록한 쿠폰에 맞는 OnePass 요금제를 이어서 가입할 수 있습니다.",
-      guideTitle: "이제 요금제 가입을 진행해 주세요.",
+      guideTitle: "이제 요금제 가입을 진행해 주세요",
       guideDesc:
-        "기본형 또는 기간형 중 원하는 유형을 선택한 뒤 인증을 완료하면 요금제 가입이 진행됩니다.",
+        "기본형 또는 기간형 중 원하는 유형을 선택하고 인증을 마치면 요금제 가입이 진행됩니다.",
       buttonText: "요금제 가입하기",
       cardLabel: "등록 완료 쿠폰",
       cardMode: "onepass",
@@ -103,8 +96,8 @@ function buildContent(type, result, productThumbMap) {
         { title: "상품명", value: productName },
         { title: "쿠폰 코드", value: couponCode },
       ],
-      productMeta: ["가입 후 바로 사용 가능", "권종별 가입 옵션 선택 가능"],
-      productThumb: productThumbMap[productCode] || onePass500Thumb,
+      productMeta: ["등록 즉시 사용 가능", "권종별 옵션 선택 가능"],
+      productThumb: PRODUCT_THUMB_MAP[productCode] || onePass500Thumb,
     };
   }
 
@@ -114,9 +107,9 @@ function buildContent(type, result, productThumbMap) {
       productName,
       productDesc:
         result?.message || "등록한 쿠폰에 맞는 baro 요금제를 선택해서 가입할 수 있습니다.",
-      guideTitle: "개시 방식을 선택해 주세요.",
+      guideTitle: "개시 방식을 선택해 주세요",
       guideDesc:
-        "자동 개시 또는 수동 개시 중 원하는 방식을 선택한 뒤 인증을 완료하면 요금제 가입이 진행됩니다.",
+        "자동 개시 또는 수동 개시 중 원하는 방식을 선택하고 인증을 마치면 요금제 가입이 진행됩니다.",
       buttonText: "요금제 가입하기",
       cardLabel: "등록 완료 쿠폰",
       cardMode: "baro",
@@ -125,7 +118,7 @@ function buildContent(type, result, productThumbMap) {
         { title: "쿠폰 코드", desc: couponCode },
         { title: "가입 방식", desc: "자동 개시 또는 수동 개시 중 선택 가능" },
       ],
-      productThumb: productThumbMap[productCode] || baro6GbThumb,
+      productThumb: PRODUCT_THUMB_MAP[productCode] || baro6GbThumb,
     };
   }
 
@@ -134,19 +127,18 @@ function buildContent(type, result, productThumbMap) {
       title: "쿠폰 등록이 완료되었습니다.",
       productName,
       productDesc:
-        result?.message || "등록한 충전형 쿠폰으로 즉시 데이터 충전 가입을 진행할 수 있습니다.",
-      guideTitle: "충전 가입을 진행해 주세요.",
-      guideDesc:
-        "충전형 baro 쿠폰은 개시 방식 선택 없이 인증 후 바로 가입 처리됩니다.",
+        result?.message || "등록한 충전 쿠폰으로 즉시 데이터 충전 가입을 진행할 수 있습니다.",
+      guideTitle: "충전 가입을 진행해 주세요",
+      guideDesc: "충전형 baro 쿠폰은 개시 방식 선택 없이 인증 후 바로 가입 처리됩니다.",
       buttonText: "충전 가입하기",
       cardLabel: "등록 완료 쿠폰",
       cardMode: "baro",
       featureList: [
         { title: "상품명", desc: productName },
         { title: "쿠폰 코드", desc: couponCode },
-        { title: "처리 방식", desc: "개시 방식 선택 없이 즉시 충전 가입 처리" },
+        { title: "처리 방식", desc: "인증 완료 후 즉시 충전 가입 처리" },
       ],
-      productThumb: productThumbMap[productCode] || baro6GbThumb,
+      productThumb: PRODUCT_THUMB_MAP[productCode] || baro6GbThumb,
     };
   }
 
@@ -154,13 +146,13 @@ function buildContent(type, result, productThumbMap) {
     title: "쿠폰 등록이 완료되었습니다.",
     productName,
     productDesc: result?.message || "금액권 쿠폰이 정상 등록되어 바로 사용할 수 있습니다.",
-    guideTitle: "금액권 등록이 완료되었습니다.",
+    guideTitle: "금액권 등록이 완료되었습니다",
     guideDesc:
-      "별도 요금제 가입 없이 T로밍 서비스 이용 시 등록된 금액권에서 우선 차감됩니다.",
+      "별도 요금제 가입 없이 T 로밍 서비스 이용 시 등록된 금액권에서 우선 차감됩니다.",
     buttonText: "등록내역 확인하기",
     cardLabel: "등록 완료 쿠폰",
     cardMode: "voucher",
-    productMeta: ["등록 즉시 사용 가능", "후속 가입 절차 없음"],
+    productMeta: ["등록 즉시 사용 가능", "추가 가입 절차 없음"],
     voucherNotes: [
       "해외 로밍 이용 요금 결제 시 등록된 금액권에서 우선 차감됩니다.",
       "금액권 정보와 사용 내역은 등록 내역 화면에서 확인할 수 있습니다.",
@@ -171,8 +163,12 @@ function buildContent(type, result, productThumbMap) {
 
 function RegisterSuccessPage({ result, onBackHome, onGoHistory, onGoJoinAuth }) {
   const type = useMemo(() => resolveType(result), [result]);
-  const today = startOfDay(new Date());
-  const maxSelectableDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 60);
+  const content = useMemo(() => buildContent(type, result), [result, type]);
+  const today = useMemo(() => startOfDay(new Date()), []);
+  const maxSelectableDate = useMemo(
+    () => new Date(today.getFullYear(), today.getMonth(), today.getDate() + 60),
+    [today],
+  );
   const [onePassStartMode, setOnePassStartMode] = useState("basic");
   const [baroStartMode, setBaroStartMode] = useState("auto");
   const [agreePrivacy, setAgreePrivacy] = useState(false);
@@ -183,21 +179,6 @@ function RegisterSuccessPage({ result, onBackHome, onGoHistory, onGoJoinAuth }) 
     new Date(today.getFullYear(), today.getMonth(), 1),
   );
   const [isThumbError, setIsThumbError] = useState(false);
-
-  const productThumbMap = {
-    onepass_500: onePass500Thumb,
-    onepass_vip: onePassVipThumb,
-    onepass_data_vip: onePassDataVipThumb,
-    baro_3gb: baro3GbThumb,
-    baro_6gb: baro6GbThumb,
-    baro_12gb: baro12GbThumb,
-    baro_24gb: baro24GbThumb,
-  };
-
-  const content = useMemo(
-    () => buildContent(type, result, productThumbMap),
-    [result, type],
-  );
 
   useEffect(() => {
     setIsThumbError(false);
@@ -267,7 +248,7 @@ function RegisterSuccessPage({ result, onBackHome, onGoHistory, onGoJoinAuth }) 
         productName: content.productName,
         joinOptionLabel: "즉시 충전",
         detailLabel: "처리 방식",
-        detailValue: "인증 완료 후 즉시 충전 가입",
+        detailValue: "인증 완료 후 즉시 충전 가입 처리",
         startMode: null,
         useYt: false,
       });
@@ -281,8 +262,8 @@ function RegisterSuccessPage({ result, onBackHome, onGoHistory, onGoJoinAuth }) 
       detailLabel: "개시 방식",
       detailValue:
         baroStartMode === "auto"
-          ? "해외 도착 후 바로 사용 가능"
-          : "원하는 시점에 직접 개시",
+          ? "해외 접속 시 바로 사용 시작"
+          : "원하는 시점에 직접 사용 시작",
       startMode: baroStartMode,
       useYt: false,
     });
@@ -553,7 +534,7 @@ function RegisterSuccessPage({ result, onBackHome, onGoHistory, onGoJoinAuth }) 
           <div className="join-card__head join-card__head--stack">
             <strong className="join-card__title">baro 개시 방식 선택</strong>
             <p className="join-card__subtext">
-              자동 개시는 해외 도착 후 바로 사용 가능하고, 수동 개시는 원하는 시점에 직접 개시할 수 있습니다.
+              자동 개시는 해외 접속 시 바로 사용 가능하고, 수동 개시는 원하는 시점에 직접 시작할 수 있습니다.
             </p>
           </div>
 
@@ -564,7 +545,7 @@ function RegisterSuccessPage({ result, onBackHome, onGoHistory, onGoJoinAuth }) 
               onClick={() => setBaroStartMode("auto")}
             >
               <strong className="option-tile__title">자동 개시</strong>
-              <span className="option-tile__desc">해외 도착 후 바로 사용 시작</span>
+              <span className="option-tile__desc">해외 접속 시 바로 사용 시작</span>
             </button>
 
             <button
@@ -605,10 +586,7 @@ function RegisterSuccessPage({ result, onBackHome, onGoHistory, onGoJoinAuth }) 
         <section className="join-card">
           <strong className="join-card__title">충전형 가입 안내</strong>
           <p className="join-card__hint">
-            충전형 baro 쿠폰은 개시 방식 선택 없이 인증 후 바로 가입 처리가 진행됩니다.
-          </p>
-          <p className="join-card__notice">
-            내부 시연용 화면에서는 인증 완료 후 곧바로 충전 가입 API를 호출합니다.
+            충전형 baro 쿠폰은 개시 방식 선택 없이 인증 후 바로 가입이 진행됩니다.
           </p>
         </section>
       ) : null}
