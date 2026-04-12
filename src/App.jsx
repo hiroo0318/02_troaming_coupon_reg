@@ -55,7 +55,10 @@ function App() {
       agreePrivacy,
     });
 
-    setRegisterResult(result);
+    setRegisterResult({
+      ...result,
+      failureStage: null,
+    });
 
     if (result.regResult === "success") {
       setPage("success");
@@ -111,6 +114,7 @@ function App() {
       setRegisterResult((prev) => ({
         ...prev,
         regResult: "fail",
+        failureStage: "subscribe",
         errorMsg: error instanceof Error ? error.message : "요금제 가입 처리에 실패했습니다.",
         message: error instanceof Error ? error.message : "요금제 가입 처리에 실패했습니다.",
       }));

@@ -1,12 +1,19 @@
 ﻿import React from "react";
 
 function RegisterFailPage({ result, onBackHome }) {
+  const isJoinFailure = result?.failureStage === "subscribe";
+  const title = isJoinFailure ? "요금제 가입에 실패하였습니다." : "쿠폰 등록에 실패하였습니다.";
+  const description =
+    result?.errorMsg ||
+    result?.message ||
+    (isJoinFailure ? "요금제 가입 처리 중 문제가 발생했습니다." : "등록 처리 중 문제가 발생했습니다.");
+
   return (
     <main className="page-content">
       <section className="result-hero result-hero--fail">
         <div className="result-icon result-icon--fail">!</div>
-        <h1 className="result-title">쿠폰 등록에 실패하였습니다.</h1>
-        <p className="result-desc">{result?.errorMsg || result?.message || "등록 처리 중 문제가 발생했습니다."}</p>
+        <h1 className="result-title">{title}</h1>
+        <p className="result-desc">{description}</p>
       </section>
 
       <section className="info-card info-card--danger">
