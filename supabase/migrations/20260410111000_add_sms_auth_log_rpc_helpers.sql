@@ -1,4 +1,4 @@
-create or replace function public.roaming_insert_sms_auth_log(payload jsonb)
+create or replace function roamingreg.roaming_insert_sms_auth_log(payload jsonb)
 returns roamingreg.sms_auth_logs
 language plpgsql
 security definer
@@ -48,7 +48,7 @@ begin
 end;
 $$;
 
-create or replace function public.roaming_update_sms_auth_log(p_id bigint, payload jsonb)
+create or replace function roamingreg.roaming_update_sms_auth_log(p_id bigint, payload jsonb)
 returns roamingreg.sms_auth_logs
 language plpgsql
 security definer
@@ -77,7 +77,7 @@ begin
 end;
 $$;
 
-create or replace function public.roaming_get_sms_auth_log_by_request_id(p_request_id text)
+create or replace function roamingreg.roaming_get_sms_auth_log_by_request_id(p_request_id text)
 returns roamingreg.sms_auth_logs
 language sql
 security definer
@@ -90,6 +90,6 @@ as $$
   limit 1;
 $$;
 
-grant execute on function public.roaming_insert_sms_auth_log(jsonb) to anon, authenticated, service_role;
-grant execute on function public.roaming_update_sms_auth_log(bigint, jsonb) to anon, authenticated, service_role;
-grant execute on function public.roaming_get_sms_auth_log_by_request_id(text) to anon, authenticated, service_role;
+grant execute on function roamingreg.roaming_insert_sms_auth_log(jsonb) to anon, authenticated, service_role;
+grant execute on function roamingreg.roaming_update_sms_auth_log(bigint, jsonb) to anon, authenticated, service_role;
+grant execute on function roamingreg.roaming_get_sms_auth_log_by_request_id(text) to anon, authenticated, service_role;

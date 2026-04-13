@@ -36,6 +36,7 @@ const SERVICE_AES_KEY = Deno.env.get("ROAMING_SERVICE_AES_KEY") ?? "";
 const SERVICE_AES_IV = Deno.env.get("ROAMING_SERVICE_AES_IV") ?? "";
 const FIXED_SMS_AUTH_CODE = Deno.env.get("ROAMING_FIXED_AUTH_CODE") ?? "123456";
 const SMS_AUTH_EXPIRE_SECONDS = 180;
+const SUBSCRIBE_MAX_ATTEMPTS = 3;
 
 // NA 코드 그룹 상수 (해지/필터링용)
 const ONEPASS_NA_CODES = [
@@ -245,7 +246,7 @@ async function encryptCouponNumber(value: string) {
 }
 
 async function callRpc(name: string, args: JsonMap) {
-  const { data, error } = await supabaseAdmin.rpc(name, args);
+  const { data, error } = await supabaseAdmin.schema("roamingreg").rpc(name, args);
 
   if (error) {
     throw new Error(`${name} 호출 실패: ${error.message}`);
@@ -516,6 +517,142 @@ async function insertPrerequisiteFailPlanLog(payload: JsonMap) {
   });
 }
 
+async function subscribeSingleNaCodeWithRetry(params: {
+  registrationId: number;
+  phoneNumber: string;
+  couponNumber: string;
+  productCode: string;
+  row: RpcRow;
+  existingNaCodes: string[];
+}): Promise<{ logs: RpcRow[]; succeeded: boolean; errorMessage: string | null }> {
+  const { registrationId, phoneNumber, couponNumber, productCode, row, existingNaCodes } = params;
+  const logs: RpcRow[] = [];
+  let errorMessage: string | null = null;
+
+  for (let attempt = 1; attempt <= SUBSCRIBE_MAX_ATTEMPTS; attempt += 1) {
+    const apiResponse = await callApiHub(SUBSCRIPTION_API_CODE, {
+      OP_CD: "S",
+      SVC_NUM: phoneNumber,
+      PROD_ID: row.na_code,
+      FREE_USE_DAY: "0",
+    });
+    const isSuccess =
+      apiResponse.ok &&
+      apiResponse.header.resultCode === "00" &&
+      apiResponse.header.result === "S";
+
+    const resultMessage = apiResponse.header.resultMessage ?? "요금제 가입 처리에 실패했습니다.";
+    errorMessage = resultMessage;
+
+    logs.push(
+      await insertPlanLog({
+        registration_id: registrationId,
+        phone_number: phoneNumber,
+        coupon_number: couponNumber,
+        product_code: productCode,
+        na_level: row.na_level,
+        na_code: row.na_code,
+        na_name: row.na_name,
+        start_mode: row.start_mode,
+        step_action: attempt === 1 ? "subscribe" : "subscribe_retry",
+        api_name: SUBSCRIPTION_API_CODE,
+        existing_na_codes: existingNaCodes,
+        request_payload: {
+          OP_CD: "S",
+          SVC_NUM: phoneNumber,
+          PROD_ID: row.na_code,
+          FREE_USE_DAY: "0",
+          attempt_no: attempt,
+          max_attempts: SUBSCRIBE_MAX_ATTEMPTS,
+        },
+        response_payload: {
+          text: apiResponse.text,
+          header: apiResponse.header,
+        },
+        sub_result: isSuccess ? "success" : "fail",
+        error_code: isSuccess ? null : apiResponse.header.responseCode,
+        error_msg: isSuccess ? null : resultMessage,
+        result_message: isSuccess
+          ? resultMessage
+          : `${resultMessage} (${attempt}/${SUBSCRIBE_MAX_ATTEMPTS}회 시도)`,
+      }),
+    );
+
+    if (isSuccess) {
+      return { logs, succeeded: true, errorMessage: null };
+    }
+  }
+
+  return { logs, succeeded: false, errorMessage };
+}
+
+async function rollbackSubscribedNaCodes(params: {
+  registrationId: number;
+  phoneNumber: string;
+  couponNumber: string;
+  productCode: string;
+  rowsToRollback: RpcRow[];
+  existingNaCodes: string[];
+}): Promise<{ logs: RpcRow[]; failedCodes: string[] }> {
+  const { registrationId, phoneNumber, couponNumber, productCode, rowsToRollback, existingNaCodes } = params;
+  const logs: RpcRow[] = [];
+  const failedCodes: string[] = [];
+
+  for (const row of [...rowsToRollback].reverse()) {
+    const naCode = getRowCode(row);
+    const naName = String(row.na_name ?? naCode);
+    const apiResponse = await callApiHub(SUBSCRIPTION_API_CODE, {
+      OP_CD: "C",
+      SVC_NUM: phoneNumber,
+      PROD_ID: naCode,
+      FREE_USE_DAY: "0",
+    });
+    const isSuccess =
+      apiResponse.ok &&
+      apiResponse.header.resultCode === "00" &&
+      apiResponse.header.result === "S";
+
+    logs.push(
+      await insertPlanLog({
+        registration_id: registrationId,
+        phone_number: phoneNumber,
+        coupon_number: couponNumber,
+        product_code: productCode,
+        na_level: row.na_level,
+        na_code: naCode,
+        na_name: naName,
+        start_mode: row.start_mode,
+        step_action: "rollback_cancel",
+        api_name: SUBSCRIPTION_API_CODE,
+        existing_na_codes: existingNaCodes,
+        request_payload: {
+          OP_CD: "C",
+          SVC_NUM: phoneNumber,
+          PROD_ID: naCode,
+          FREE_USE_DAY: "0",
+          rollback: true,
+        },
+        response_payload: {
+          text: apiResponse.text,
+          header: apiResponse.header,
+        },
+        sub_result: isSuccess ? "rollback_success" : "rollback_fail",
+        error_code: isSuccess ? null : apiResponse.header.responseCode,
+        error_msg: isSuccess ? null : apiResponse.header.resultMessage,
+        result_message: isSuccess
+          ? `${naName} 롤백 해지가 완료되었습니다.`
+          : `${naName} 롤백 해지에 실패했습니다.`,
+      }),
+    );
+
+    if (!isSuccess) {
+      failedCodes.push(naCode);
+    }
+  }
+
+  return { logs, failedCodes };
+}
+
 async function resolveYtEligibility(_phoneNumber: string) {
   // TODO: 신규 YT 대상자 조회 API가 준비되면 아래 조회를 활성화해서 실제 대상 여부를 판별합니다.
   // const response = await callApiHub(YT_TARGET_API_CODE, { SVC_NUM: _phoneNumber });
@@ -678,51 +815,47 @@ async function subscribeProduct(params: {
   }
 
   // --- 요금제 가입 ---
+  const subscribedRows: RpcRow[] = [];
+
   for (const row of rowsToSubscribe) {
-    const apiResponse = await callApiHub(SUBSCRIPTION_API_CODE, {
-      OP_CD: "S",
-      SVC_NUM: phoneNumber,
-      PROD_ID: row.na_code,
-      FREE_USE_DAY: "0",
+    const subscribeResult = await subscribeSingleNaCodeWithRetry({
+      registrationId,
+      phoneNumber,
+      couponNumber,
+      productCode,
+      row,
+      existingNaCodes,
     });
-    const isSuccess =
-      apiResponse.ok &&
-      apiResponse.header.resultCode === "00" &&
-      apiResponse.header.result === "S";
+    logs.push(...subscribeResult.logs);
 
-    logs.push(
-      await insertPlanLog({
-        registration_id: registrationId,
-        phone_number: phoneNumber,
-        coupon_number: couponNumber,
-        product_code: productCode,
-        na_level: row.na_level,
-        na_code: row.na_code,
-        na_name: row.na_name,
-        start_mode: row.start_mode,
-        step_action: "subscribe",
-        api_name: SUBSCRIPTION_API_CODE,
-        existing_na_codes: existingNaCodes,
-        request_payload: {
-          OP_CD: "S",
-          SVC_NUM: phoneNumber,
-          PROD_ID: row.na_code,
-          FREE_USE_DAY: "0",
-        },
-        response_payload: {
-          text: apiResponse.text,
-          header: apiResponse.header,
-        },
-        sub_result: isSuccess ? "success" : "fail",
-        error_code: isSuccess ? null : apiResponse.header.responseCode,
-        error_msg: isSuccess ? null : apiResponse.header.resultMessage,
-        result_message: apiResponse.header.resultMessage,
-      }),
-    );
-
-    if (!isSuccess) {
-      throw new Error(apiResponse.header.resultMessage ?? "요금제 가입 처리에 실패했습니다.");
+    if (subscribeResult.succeeded) {
+      subscribedRows.push(row);
+      continue;
     }
+
+    if (category === "BARO" && subscribedRows.length) {
+      const rollbackResult = await rollbackSubscribedNaCodes({
+        registrationId,
+        phoneNumber,
+        couponNumber,
+        productCode,
+        rowsToRollback: subscribedRows,
+        existingNaCodes,
+      });
+      logs.push(...rollbackResult.logs);
+
+      if (rollbackResult.failedCodes.length) {
+        throw new Error(
+          "baro 요금제 가입 처리 중 오류가 발생했습니다. 자동 복구를 시도했지만 일부 단계 정리에 실패했습니다. 고객센터를 통해 가입 상태를 확인해 주세요.",
+        );
+      }
+
+      throw new Error(
+        "baro 요금제 가입 처리 중 오류가 발생하여 자동 복구를 완료했습니다. T world에서 다시 처음부터 가입해 주세요.",
+      );
+    }
+
+    throw new Error(subscribeResult.errorMessage ?? "요금제 가입 처리에 실패했습니다.");
   }
 
   return {

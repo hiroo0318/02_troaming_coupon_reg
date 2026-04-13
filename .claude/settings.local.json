@@ -9,7 +9,11 @@
       "mcp__45299044-5ee8-4052-9406-2a42f7696a48__list_tables",
       "WebFetch(domain:m.tworld.co.kr)",
       "WebFetch(domain:m.roamingcoupon.co.kr)",
-      "mcp__45299044-5ee8-4052-9406-2a42f7696a48__execute_sql"
+      "mcp__45299044-5ee8-4052-9406-2a42f7696a48__execute_sql",
+      "mcp__claude_ai_Supabase__execute_sql",
+      "mcp__claude_ai_Supabase__get_project_url",
+      "mcp__claude_ai_Supabase__get_publishable_keys",
+      "mcp__claude_ai_Supabase__get_edge_function"
     ]
   }
 }

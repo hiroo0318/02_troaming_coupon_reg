@@ -35,7 +35,7 @@ end $$;
 create index if not exists idx_coupon_registrations_auth_profile_id
   on roamingreg.coupon_registrations(auth_profile_id);
 
-create or replace function public.roaming_upsert_lookup_auth(payload jsonb)
+create or replace function roamingreg.roaming_upsert_lookup_auth(payload jsonb)
 returns roamingreg.lookup_auth_profiles
 language plpgsql
 security definer
@@ -75,7 +75,7 @@ begin
 end;
 $$;
 
-create or replace function public.roaming_verify_lookup_auth(
+create or replace function roamingreg.roaming_verify_lookup_auth(
   p_phone_number text,
   p_pin_hash text,
   p_purpose text default null
@@ -100,5 +100,5 @@ begin
 end;
 $$;
 
-grant execute on function public.roaming_upsert_lookup_auth(jsonb) to anon, authenticated, service_role;
-grant execute on function public.roaming_verify_lookup_auth(text, text, text) to anon, authenticated, service_role;
+grant execute on function roamingreg.roaming_upsert_lookup_auth(jsonb) to anon, authenticated, service_role;
+grant execute on function roamingreg.roaming_verify_lookup_auth(text, text, text) to anon, authenticated, service_role;
