@@ -49,24 +49,39 @@ function App() {
   };
 
   const handleRegisterSubmit = async ({ couponNumber, phoneNumber, agreePrivacy }) => {
-    const result = await submitRegistration({
-      couponNumber,
-      phoneNumber,
-      agreePrivacy,
-    });
+    try {
+      const result = await submitRegistration({
+        couponNumber,
+        phoneNumber,
+        agreePrivacy,
+      });
 
-    setRegisterResult({
-      ...result,
-      failureStage: null,
-    });
+      setRegisterResult({
+        ...result,
+        failureStage: null,
+      });
 
-    if (result.regResult === "success") {
-      setPage("success");
+      if (result.regResult === "success") {
+        setPage("success");
+        return result;
+      }
+
+      setPage("fail");
       return result;
-    }
+    } catch (error) {
+      const fallbackResult = {
+        couponNumber,
+        phoneNumber,
+        regResult: "fail",
+        failureStage: "register",
+        errorMsg: error instanceof Error ? error.message : "등록 처리 중 문제가 발생했습니다.",
+        message: error instanceof Error ? error.message : "등록 처리 중 문제가 발생했습니다.",
+      };
 
-    setPage("fail");
-    return result;
+      setRegisterResult(fallbackResult);
+      setPage("fail");
+      return fallbackResult;
+    }
   };
 
   const handleHistoryPrepare = ({ phoneNumber, agreePrivacy }) => {

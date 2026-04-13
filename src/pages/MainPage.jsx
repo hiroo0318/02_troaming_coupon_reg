@@ -46,7 +46,7 @@ function MainPage({ onSubmitRegister }) {
   ];
   const isEnabled =
     couponNumber.trim().length >= 8 &&
-    couponNumber.trim().length <= 32 &&
+    couponNumber.trim().length <= 12 &&
     phoneNumber.trim().length >= 10 &&
     phoneNumber.trim().length <= 11 &&
     agreePrivacy;
@@ -96,9 +96,9 @@ function MainPage({ onSubmitRegister }) {
               type="text"
               className="form-input"
               value={couponNumber}
-              onChange={(event) => setCouponNumber(event.target.value.replace(/\D/g, ""))}
+              onChange={(event) => setCouponNumber(event.target.value.replace(/\D/g, "").slice(0, 12))}
               placeholder="쿠폰 번호를 입력하세요"
-              maxLength={32}
+              maxLength={12}
             />
           </div>
 

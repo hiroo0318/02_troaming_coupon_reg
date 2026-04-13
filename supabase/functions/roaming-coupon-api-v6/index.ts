@@ -29,7 +29,7 @@ const COUPON_REGISTER_URL =
 const COUPON_ISSU_NO = Deno.env.get("ROAMING_COUPON_ISSU_NO") ?? "RF";
 const COUPON_CUST_NO = Deno.env.get("ROAMING_COUPON_CUST_NO") ?? "907203";
 const COUPON_AUTH_KEY =
-  Deno.env.get("ROAMING_COUPON_AUTH_KEY") ?? "MmQ5ODY4MDBiYzgzN2E1YTA3NWE2ZmNmN2IxMWUyMmI=";
+  Deno.env.get("ROAMING_COUPON_AUTH_KEY") ?? "MmQ5ODY4MDBiYzgzN2E1YTA3NWE2ZmNmN77862IxMWUyMmI=";
 const COUPON_AES_KEY =
   Deno.env.get("ROAMING_COUPON_AES_KEY") ?? "2d986800b9037a5a07572fcf7b11e03b";
 const SERVICE_AES_KEY = Deno.env.get("ROAMING_SERVICE_AES_KEY") ?? "";
@@ -37,6 +37,7 @@ const SERVICE_AES_IV = Deno.env.get("ROAMING_SERVICE_AES_IV") ?? "";
 const FIXED_SMS_AUTH_CODE = Deno.env.get("ROAMING_FIXED_AUTH_CODE") ?? "123456";
 const SMS_AUTH_EXPIRE_SECONDS = 180;
 const SUBSCRIBE_MAX_ATTEMPTS = 3;
+const EXTERNAL_API_TIMEOUT_MS = 15000;
 
 // NA 코드 그룹 상수 (해지/필터링용)
 const ONEPASS_NA_CODES = [
@@ -261,48 +262,81 @@ async function callApiHub(apiCode: string, cspParam: JsonMap) {
     apiCode,
     cspParam: JSON.stringify(cspParam),
   });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), EXTERNAL_API_TIMEOUT_MS);
 
-  const response = await fetch(APIHUB_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body,
-  });
+  try {
+    const response = await fetch(APIHUB_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body,
+      signal: controller.signal,
+    });
 
-  const text = await response.text();
+    const text = await response.text();
 
-  return {
-    ok: response.ok,
-    status: response.status,
-    text,
-    header: {
-      responseCode: decodeHtml(extractHeaderValue(text, "RESPONSE_CODE")),
-      resultCode: decodeHtml(extractHeaderValue(text, "RESULT_CODE")),
-      result: decodeHtml(extractHeaderValue(text, "RESULT")),
-      resultMessage: decodeHtml(extractHeaderValue(text, "RESULT_MESSAGE")),
-    },
-  };
+    return {
+      ok: response.ok,
+      status: response.status,
+      text,
+      header: {
+        responseCode: decodeHtml(extractHeaderValue(text, "RESPONSE_CODE")),
+        resultCode: decodeHtml(extractHeaderValue(text, "RESULT_CODE")),
+        result: decodeHtml(extractHeaderValue(text, "RESULT")),
+        resultMessage: decodeHtml(extractHeaderValue(text, "RESULT_MESSAGE")),
+      },
+    };
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error("외부 연동 응답이 지연되고 있습니다. 잠시 후 다시 시도해주세요.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
-async function callCouponRegistration(couponNumber: string) {
+async function callCouponRegistration(couponNumber: string, phoneNumber: string) {
   const encryptedCouponNumber = await encryptCouponNumber(couponNumber);
-  const body = new URLSearchParams({
+  const tradeId = `${Date.now()}${Math.floor(Math.random() * 1_000_000)
+    .toString()
+    .padStart(6, "0")}`.slice(0, 20);
+  const requestBody = {
     issu_no: COUPON_ISSU_NO,
+    trade_id: tradeId,
     cust_no: COUPON_CUST_NO,
     auth_key: COUPON_AUTH_KEY,
-    coupon_no: encryptedCouponNumber,
-  });
+    pin_no: encryptedCouponNumber,
+    tel_no: phoneNumber,
+    rt_format: "JSON",
+  };
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), EXTERNAL_API_TIMEOUT_MS);
+  let response: Response;
+  let text: string;
 
-  const response = await fetch(COUPON_REGISTER_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body,
-  });
+  try {
+    response = await fetch(COUPON_REGISTER_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+      signal: controller.signal,
+    });
 
-  const text = await response.text();
+    text = await response.text();
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error("쿠폰 등록 서버 응답이 지연되고 있습니다. 잠시 후 다시 시도해주세요.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+
   let parsedJson: JsonMap | null = null;
 
   try {
@@ -312,8 +346,12 @@ async function callCouponRegistration(couponNumber: string) {
   }
 
   const couponCode =
+    parsedJson?.PIN_NO ??
+    parsedJson?.pin_no ??
     parsedJson?.coupon_code ??
     parsedJson?.couponCode ??
+    extractTagValue(text, "PIN_NO") ??
+    extractTagValue(text, "pin_no") ??
     extractTagValue(text, "COUPON_CODE") ??
     extractTagValue(text, "coupon_code");
   const couponName =
@@ -323,17 +361,23 @@ async function callCouponRegistration(couponNumber: string) {
     extractTagValue(text, "coupon_name");
   const resultCode =
     String(
-      parsedJson?.result_code ??
+      parsedJson?.RETURNCODE ??
+        parsedJson?.returnCode ??
+        parsedJson?.result_code ??
         parsedJson?.resultCode ??
         extractTagValue(text, "RESULT_CODE") ??
+        extractTagValue(text, "RETURNCODE") ??
         extractTagValue(text, "result_code") ??
         "",
     ) || null;
   const resultMessage =
     String(
-      parsedJson?.result_message ??
+      parsedJson?.RETURNMSG ??
+        parsedJson?.returnMsg ??
+        parsedJson?.result_message ??
         parsedJson?.resultMessage ??
         extractTagValue(text, "RESULT_MESSAGE") ??
+        extractTagValue(text, "RETURNMSG") ??
         extractTagValue(text, "result_message") ??
         "",
     ) || null;
@@ -345,6 +389,7 @@ async function callCouponRegistration(couponNumber: string) {
     ok: response.ok && isBusinessSuccess,
     status: response.status,
     raw: text,
+    requestBody,
     couponCode,
     couponName,
     resultCode,
@@ -913,6 +958,9 @@ async function handleRegister(payload: JsonMap) {
   const registration = await insertRegistration({
     phone_number: phoneNumber,
     coupon_number: couponNumber,
+    category: "UNKNOWN",
+    product_name: "미확인 쿠폰",
+    subscription_required: false,
     status: "처리중",
     reg_result: "pending",
     service_check_result: "pending",
@@ -972,7 +1020,7 @@ async function handleRegister(payload: JsonMap) {
       };
     }
 
-    const couponResponse = await callCouponRegistration(couponNumber);
+    const couponResponse = await callCouponRegistration(couponNumber, phoneNumber);
     const resolvedCouponCode =
       couponResponse.couponCode ||
       (/^ROM[A-Z0-9]+$/i.test(couponNumber) ? couponNumber : null);
