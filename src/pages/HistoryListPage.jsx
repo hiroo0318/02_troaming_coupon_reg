@@ -21,7 +21,7 @@ function formatDate(value = "") {
   if (Number.isNaN(date.getTime())) return value;
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
-  return `${date.getFullYear()}.${month}.${day} 등록`;
+  return `${date.getFullYear()}.${month}.${day}`;
 }
 
 function getMonthsDiff(value = "") {
@@ -31,12 +31,56 @@ function getMonthsDiff(value = "") {
   return (now.getFullYear() - date.getFullYear()) * 12 + (now.getMonth() - date.getMonth());
 }
 
+function formatUsageExpiryDate(value = "") {
+  if (!value) return "-";
+  const registeredAt = new Date(value);
+  if (Number.isNaN(registeredAt.getTime())) return "-";
+
+  const targetLastDay = new Date(
+    registeredAt.getFullYear(),
+    registeredAt.getMonth() + 13,
+    0,
+  );
+  const month = String(targetLastDay.getMonth() + 1).padStart(2, "0");
+  const day = String(targetLastDay.getDate()).padStart(2, "0");
+  return `${targetLastDay.getFullYear()}.${month}.${day}`;
+}
+
+function formatPriceLabel(value = "") {
+  const digits = String(value ?? "").replace(/\D/g, "");
+  if (!digits) return null;
+  return `${Number(digits).toLocaleString("ko-KR")}원`;
+}
+
+function resolveVoucherTitle(item = {}) {
+  const candidates = [item.priceLabel, item.couponName, item.productName, item.productCode];
+
+  for (const candidate of candidates) {
+    const text = String(candidate ?? "").trim();
+    if (!text) continue;
+
+    const amountWithWon = text.match(/(\d[\d,]*)\s*원/);
+    if (amountWithWon) {
+      return `T 로밍쿠폰 ${formatPriceLabel(amountWithWon[1])}`;
+    }
+
+    const trailingDigits = text.match(/(\d[\d,]*)$/);
+    if (trailingDigits) {
+      return `T 로밍쿠폰 ${formatPriceLabel(trailingDigits[1])}`;
+    }
+  }
+
+  return "T 로밍쿠폰";
+}
+
 function HistoryListPage({ phoneNumber, historyItems = [], onBack }) {
   const [period, setPeriod] = useState("3개월");
 
   const filteredItems = useMemo(() => {
     const limit = period === "3개월" ? 3 : period === "6개월" ? 6 : 12;
-    return historyItems.filter((item) => getMonthsDiff(item.registeredAt) <= limit);
+    return historyItems.filter(
+      (item) => item.regResult === "success" && getMonthsDiff(item.registeredAt) <= limit,
+    );
   }, [historyItems, period]);
 
   return (
@@ -45,7 +89,7 @@ function HistoryListPage({ phoneNumber, historyItems = [], onBack }) {
         <h1 className="history-summary__title">
           {maskPhoneNumber(phoneNumber)} 번호로 등록된 쿠폰입니다.
         </h1>
-        <p className="history-summary__desc">{`최근 ${period} 내역과 등록 상태를 확인할 수 있습니다.`}</p>
+        <p className="history-summary__desc">{`최근 ${period} 내역을 확인할 수 있습니다.`}</p>
       </section>
 
       <section className="filter-chip-row">
@@ -76,19 +120,26 @@ function HistoryListPage({ phoneNumber, historyItems = [], onBack }) {
         {filteredItems.length ? (
           filteredItems.map((item) => (
             <article className="history-card" key={item.id}>
-              <div className="history-card__top">
-                <span className="history-card__category">{item.productCode || "쿠폰"}</span>
-                <span
-                  className={`history-card__status ${item.regResult !== "success" ? "history-card__status--refund" : ""}`}
-                >
-                  {item.regResult === "success" ? "등록 완료" : "실패"}
-                </span>
-              </div>
-              <strong className="history-card__name">{item.productName || "등록 상품"}</strong>
-              <p className="history-card__date">{formatDate(item.registeredAt)}</p>
-              <div className="history-card__meta">
-                <span className="history-card__meta-item">쿠폰번호 {formatCouponNumber(item.couponNumber || "")}</span>
-                {item.errorMsg ? <span className="history-card__meta-item">사유 {item.errorMsg}</span> : null}
+              <strong className="history-card__name">
+                {String(item.category ?? "") === "금액권"
+                  ? resolveVoucherTitle(item)
+                  : item.productName || "등록 상품"}
+              </strong>
+              <div className="history-card__meta history-card__meta--details">
+                <div className="history-card__detail-row">
+                  <span className="history-card__detail-label">등록일</span>
+                  <span className="history-card__detail-value">{formatDate(item.registeredAt)}</span>
+                </div>
+                <div className="history-card__detail-row">
+                  <span className="history-card__detail-label">사용 종료일</span>
+                  <span className="history-card__detail-value">{formatUsageExpiryDate(item.registeredAt)}</span>
+                </div>
+                <div className="history-card__detail-row">
+                  <span className="history-card__detail-label">쿠폰번호</span>
+                  <span className="history-card__detail-value">
+                    {formatCouponNumber(item.couponNumber || "")}
+                  </span>
+                </div>
               </div>
             </article>
           ))

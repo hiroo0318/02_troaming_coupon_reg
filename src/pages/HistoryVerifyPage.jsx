@@ -27,15 +27,12 @@ function HistoryVerifyPage({ initialPhoneNumber = "", onVerified }) {
           <br />
           휴대폰번호를 입력하세요.
         </h1>
-        <p className="hero-desc">
-          등록 시 사용한 휴대폰번호를 입력하면 다음 단계에서 인증번호 확인 후 내역을 조회할 수 있습니다.
-        </p>
       </section>
 
       <section className="register-card">
         <div className="form-group">
           <label htmlFor="historyPhoneNumber" className="form-label">
-            휴대폰 번호 입력
+            휴대폰번호
           </label>
           <input
             id="historyPhoneNumber"
@@ -43,10 +40,9 @@ function HistoryVerifyPage({ initialPhoneNumber = "", onVerified }) {
             className="form-input"
             value={phoneNumber}
             onChange={(event) => setPhoneNumber(event.target.value.replace(/\D/g, ""))}
-            placeholder="조회할 휴대폰번호를 입력하세요"
+            placeholder="휴대폰번호를 입력하세요"
             maxLength={11}
           />
-          <p className="form-help">본인 휴대폰번호를 '-' 없이 입력해주세요.</p>
         </div>
 
         <label className="agree-row agree-row--interactive">

@@ -137,7 +137,7 @@ function SmsAuthServerPage({ mode = "join", phoneNumber = "", onBack, onVerified
           <p className="form-help">
             {isCodeSent
               ? isExpired
-                ? "만료된 인증번호입니다. 인증번호를 다시 요청해주세요."
+                ? "인증번호 입력 시간이 종료되었습니다. 인증번호 재발송을 클릭해 주세요."
                 : `${formatRemainingTime(remainingSeconds)} 내에 인증번호를 입력해주세요.`
               : "먼저 인증번호를 요청한 뒤 인증을 진행해주세요."}
           </p>
