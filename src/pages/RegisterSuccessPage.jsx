@@ -75,8 +75,29 @@ function resolveType(result) {
   return "voucher";
 }
 
-function buildOnePassSummary(productCode, productName) {
+function parseFeatureData(value) {
+  if (!value) return null;
+  if (typeof value === "string") {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return null;
+    }
+  }
+  if (typeof value === "object") {
+    return value;
+  }
+  return null;
+}
+
+function buildOnePassSummary(productCode, productName, featureData) {
   const normalizedCode = String(productCode ?? "").toLowerCase();
+  if (Array.isArray(featureData?.summaryTiles) && featureData.summaryTiles.length) {
+    return {
+      tiles: featureData.summaryTiles,
+      meta: Array.isArray(featureData?.meta) ? featureData.meta : ["baro 통화 포함", "문자 기본 제공"],
+    };
+  }
 
   if (normalizedCode === "onepass_500") {
     return {
@@ -149,8 +170,13 @@ function buildOnePassSummary(productCode, productName) {
   };
 }
 
-function buildBaroSummary(productCode) {
+function buildBaroSummary(productCode, featureData) {
   const normalizedCode = String(productCode ?? "").toLowerCase();
+  if (Array.isArray(featureData?.summaryItems) && featureData.summaryItems.length) {
+    return {
+      items: featureData.summaryItems,
+    };
+  }
 
   if (normalizedCode === "baro_3gb") {
     return {
@@ -247,55 +273,74 @@ function resolveVoucherAmountLabel(result) {
 function buildContent(type, result) {
   const productCode = String(result?.productCode ?? "").toLowerCase();
   const productName = result?.productName || "등록 상품";
-  const couponCode = result?.couponCode || "-";
+  const featureData = parseFeatureData(result?.featureData);
 
   if (type === "onepass") {
-    const onePassSummary = buildOnePassSummary(productCode, productName);
+    const onePassSummary = buildOnePassSummary(productCode, productName, featureData);
 
     return {
       title: "쿠폰 등록이 완료되었습니다.",
       productName,
-      productDesc: null,
-      guideTitle: "이제 요금제 가입을 진행해 주세요",
+      productDesc: result?.productDesc || null,
+      guideTitle: result?.guideTitle || "이제 요금제 가입을 진행해 주세요",
       guideDesc:
+        result?.guideDesc ||
         "등록한 OnePass 쿠폰 혜택을 적용하려면 먼저 요금제 가입이 필요합니다.<br />요금제 가입을 위해 원하는 유형을 선택한 뒤 가입하기 버튼을 눌러 주세요.",
-      buttonText: "요금제 가입하기",
+      buttonText: result?.buttonText || "요금제 가입하기",
       cardLabel: "등록 완료 쿠폰",
       cardMode: "onepass",
       summaryTiles: onePassSummary.tiles,
       productMeta: onePassSummary.meta,
+      basicNotice:
+        featureData?.joinNoticeBasic ||
+        "기본형은 첫 데이터 사용 시점부터 혜택이 자동 적용됩니다.",
+      periodNotice:
+        featureData?.joinNoticePeriod ||
+        "기간형은 선택한 개시일 기준으로 혜택이 적용됩니다.",
       productThumb: PRODUCT_THUMB_MAP[productCode] || onePass500Thumb,
     };
   }
 
   if (type === "baro") {
-    const baroSummary = buildBaroSummary(productCode);
+    const baroSummary = buildBaroSummary(productCode, featureData);
 
     return {
       title: "쿠폰 등록이 완료되었습니다.",
       productName,
-      productDesc: null,
-      guideTitle: "요금제 가입",
+      productDesc: result?.productDesc || null,
+      guideTitle: result?.guideTitle || "요금제 가입",
       guideDesc:
+        result?.guideDesc ||
         "등록한 baro 쿠폰 혜택을 적용하려면 먼저 요금제 가입이 필요합니다.<br />요금제 가입을 위해 개시 방식을 선택한 뒤 가입하기 버튼을 눌러 주세요.",
-      buttonText: "요금제 가입하기",
+      buttonText: result?.buttonText || "요금제 가입하기",
       cardLabel: "등록 완료 쿠폰",
       cardMode: "baro",
       summaryItems: baroSummary.items,
+      optionTitle: featureData?.optionTitle || "baro 요금제 시작 옵션",
+      optionAutoTitle: featureData?.options?.auto?.title || "자동 개시",
+      optionAutoDesc:
+        featureData?.options?.auto?.desc ||
+        "현재 선택한 데이터 용량을 출국할 때마다 자동 적용",
+      optionManualTitle: featureData?.options?.manual?.title || "수동 개시",
+      optionManualDesc:
+        featureData?.options?.manual?.desc ||
+        "출국할 때마다 필요한 데이터 용량을 직접 선택해 사용",
       productThumb: PRODUCT_THUMB_MAP[productCode] || baro6GbThumb,
     };
   }
 
   if (type === "baro_charge") {
-    const baroSummary = buildBaroSummary(productCode);
+    const baroSummary = buildBaroSummary(productCode, featureData);
 
     return {
       title: "쿠폰 등록이 완료되었습니다.",
       productName,
-      productDesc: null,
-      guideTitle: "충전 가입을 진행해 주세요",
-      guideDesc: "등록한 baro 충전 쿠폰 혜택을 적용하려면 이용 중인 baro 요금제에 충전 가입이 필요합니다.<br />인증을 완료한 뒤 충전 가입하기 버튼을 눌러 주세요.",
-      buttonText: "충전 가입하기",
+      productDesc: result?.productDesc || null,
+      guideTitle: result?.guideTitle || "충전 가입을 진행해 주세요",
+      guideDesc:
+        result?.guideDesc ||
+        "등록한 baro 충전 쿠폰 혜택을 적용하려면 이용 중인 baro 요금제에 충전 가입이 필요합니다.<br />인증을 완료한 뒤 충전 가입하기 버튼을 눌러 주세요.",
+      buttonText: result?.buttonText || "충전 가입하기",
       cardLabel: "등록 완료 쿠폰",
       cardMode: "baro",
       summaryItems: baroSummary.items,
@@ -306,17 +351,21 @@ function buildContent(type, result) {
   return {
     title: "쿠폰 등록이 완료되었습니다.",
     productName,
-    amountLabel: resolveVoucherAmountLabel(result),
-    productDesc: null,
-    guideTitle: null,
-    guideDesc: null,
-    buttonText: "등록내역 확인하기",
+    amountLabel: result?.priceLabel || resolveVoucherAmountLabel(result),
+    productDesc: result?.productDesc || null,
+    guideTitle: result?.guideTitle || null,
+    guideDesc: result?.guideDesc || null,
+    buttonText: result?.buttonText || "등록내역 확인하기",
     cardLabel: "등록 완료 쿠폰",
     cardMode: "voucher",
-    productMeta: ["등록 즉시 사용 가능", "추가 가입 절차 없음"],
-    voucherNotes: [
-      "해외 로밍 이용 요금 결제 시 등록된 금액권에서 우선 차감됩니다.",
-    ],
+    productMeta:
+      Array.isArray(featureData?.meta) && featureData.meta.length
+        ? featureData.meta
+        : ["등록 즉시 사용 가능", "추가 가입 절차 없음"],
+    voucherNotes:
+      Array.isArray(featureData?.voucherNotes) && featureData.voucherNotes.length
+        ? featureData.voucherNotes
+        : ["해외 로밍 이용 요금 결제 시 등록된 금액권에서 우선 차감됩니다."],
     productThumb: voucherThumb,
   };
 }
@@ -442,7 +491,9 @@ function RegisterSuccessPage({ result, onBackHome, onGoHistory, onGoJoinAuth }) 
             <div className="product-card__copy">
               <p className="product-card__eyebrow">{content.cardLabel}</p>
               <strong className="product-card__name">{content.productName}</strong>
-              {content.productDesc ? <p className="product-card__desc">{content.productDesc}</p> : null}
+              {String(content.productDesc ?? "").trim() ? (
+                <p className="product-card__desc">{content.productDesc}</p>
+              ) : null}
             </div>
 
             <div className={`product-card__thumb ${isThumbError ? "is-fallback" : ""}`}>

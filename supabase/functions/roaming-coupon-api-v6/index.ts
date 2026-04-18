@@ -1005,6 +1005,12 @@ function mapRegistrationResponse(row: RpcRow, logs: RpcRow[] = []) {
     errorMsg: row.error_msg,
     registeredAt: row.registered_at,
     createdAt: row.created_at,
+    productDesc: row.product_desc ?? null,
+    priceLabel: row.price_label ?? null,
+    guideTitle: row.guide_title ?? null,
+    guideDesc: row.guide_desc ?? null,
+    buttonText: row.button_text ?? null,
+    featureData: row.feature_data ?? null,
     logs: logs.map((log) => ({
       id: log.id,
       stepAction: log.step_action,
@@ -1163,6 +1169,12 @@ async function handleRegister(payload: JsonMap) {
     return {
       success: true,
       ...mapRegistrationResponse(updatedRegistration),
+      productDesc: couponType?.product_desc ?? null,
+      priceLabel: couponType?.price_label ?? null,
+      guideTitle: couponType?.guide_title ?? null,
+      guideDesc: couponType?.guide_desc ?? null,
+      buttonText: couponType?.button_text ?? null,
+      featureData: couponType?.feature_data ?? null,
       message: "쿠폰 등록이 완료되었습니다.",
     };
   } catch (error) {
