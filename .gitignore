@@ -25,6 +25,7 @@ dist-ssr
 
 # Local env and temporary office files
 .env
+.env.bridge
 tmp/
 ~$*
 *.tmp

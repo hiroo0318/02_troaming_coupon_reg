@@ -1,4 +1,4 @@
-﻿import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -318,6 +318,14 @@ async function callApiHub(apiCode: string, cspParam: JsonMap) {
   const timeout = setTimeout(() => controller.abort(), EXTERNAL_API_TIMEOUT_MS);
 
   try {
+    console.log("[APIHUB] request", {
+      ifCode: APIHUB_IF_CODE,
+      apiCode,
+      url: APIHUB_URL,
+      cspParam,
+      encodedBody: body.toString(),
+    });
+
     const response = await fetch(APIHUB_URL, {
       method: "POST",
       headers: {
@@ -331,6 +339,15 @@ async function callApiHub(apiCode: string, cspParam: JsonMap) {
     const text = normalizeApiHubText(rawText);
     const wrappedResultMessage = extractWrappedResultField(rawText, "resultMsg");
     const wrappedResultCode = extractWrappedResultField(rawText, "resultCd");
+
+    console.log("[APIHUB] response", {
+      apiCode,
+      status: response.status,
+      ok: response.ok,
+      contentType: response.headers.get("content-type"),
+      rawLength: rawText.length,
+      preview: rawText.slice(0, 300),
+    });
 
     return {
       ok: response.ok,
@@ -373,6 +390,13 @@ async function callCouponRegistration(couponNumber: string, phoneNumber: string)
   let text: string;
 
   try {
+    console.log("[COUPON_REGISTER] request", {
+      url: COUPON_REGISTER_URL,
+      couponNumber,
+      phoneNumber,
+      requestBody,
+    });
+
     response = await fetch(COUPON_REGISTER_URL, {
       method: "POST",
       headers: {
@@ -383,6 +407,13 @@ async function callCouponRegistration(couponNumber: string, phoneNumber: string)
     });
 
     text = await response.text();
+    console.log("[COUPON_REGISTER] response", {
+      status: response.status,
+      ok: response.ok,
+      contentType: response.headers.get("content-type"),
+      rawLength: text.length,
+      preview: text.slice(0, 500),
+    });
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
       throw new Error("쿠폰 등록 서버 응답이 지연되고 있습니다. 잠시 후 다시 시도해주세요.");
@@ -1375,7 +1406,31 @@ async function handleMockSmsVerify(payload: JsonMap) {
   };
 }
 
-Deno.serve(async (request) => {
+const bridgePort = Number(Deno.env.get("LOCAL_BRIDGE_PORT") ?? "8787");
+
+// This bridge keeps the existing server logic but runs on the tester's PC so
+// external carrier IF requests originate from a VPN-connected localhost.
+Deno.serve({ hostname: "127.0.0.1", port: bridgePort }, async (request) => {
+  const url = new URL(request.url);
+
+  if (request.method === "GET" && url.pathname === "/health") {
+    return json({
+      success: true,
+      mode: "local-bridge",
+      port: bridgePort,
+    });
+  }
+
+  if (url.pathname !== "/api/roaming") {
+    return json(
+      {
+        success: false,
+        message: "지원하지 않는 경로입니다.",
+      },
+      { status: 404 },
+    );
+  }
+
   if (request.method === "OPTIONS") {
     return new Response("ok", {
       headers: corsHeaders,
@@ -1423,3 +1478,4 @@ Deno.serve(async (request) => {
     );
   }
 });
+
