@@ -432,17 +432,25 @@ async function callCouponRegistration(couponNumber: string, phoneNumber: string)
   }
 
   const couponCode =
+    parsedJson?.PRD_CD ??
+    parsedJson?.prd_cd ??
     parsedJson?.PIN_NO ??
     parsedJson?.pin_no ??
     parsedJson?.coupon_code ??
     parsedJson?.couponCode ??
+    extractTagValue(text, "PRD_CD") ??
+    extractTagValue(text, "prd_cd") ??
     extractTagValue(text, "PIN_NO") ??
     extractTagValue(text, "pin_no") ??
     extractTagValue(text, "COUPON_CODE") ??
     extractTagValue(text, "coupon_code");
   const couponName =
+    parsedJson?.PRD_NM ??
+    parsedJson?.prd_nm ??
     parsedJson?.coupon_name ??
     parsedJson?.couponName ??
+    extractTagValue(text, "PRD_NM") ??
+    extractTagValue(text, "prd_nm") ??
     extractTagValue(text, "COUPON_NAME") ??
     extractTagValue(text, "coupon_name");
   const resultCode =
@@ -1020,7 +1028,6 @@ function mapRegistrationResponse(row: RpcRow, logs: RpcRow[] = []) {
     subscriptionRequired: Boolean(row.subscription_required),
     regResult: row.reg_result,
     status: row.status,
-    authMethod: row.auth_method,
     message:
       row.reg_result === "success"
         ? "쿠폰 등록이 완료되었습니다."
