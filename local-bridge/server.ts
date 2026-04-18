@@ -1061,6 +1061,7 @@ async function handleRegister(payload: JsonMap) {
     status: "처리중",
     reg_result: "pending",
     service_check_result: "pending",
+    registered_at: new Date().toISOString(),
   });
 
   try {
