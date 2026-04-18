@@ -75,69 +75,198 @@ function resolveType(result) {
   return "voucher";
 }
 
+function buildOnePassSummary(productCode, productName) {
+  const normalizedCode = String(productCode ?? "").toLowerCase();
+
+  if (normalizedCode === "onepass_500") {
+    return {
+      tiles: [
+        {
+          icon: "◔",
+          title: "데이터량",
+          value: "500MB 제공 후 제한 속도로 계속 이용",
+        },
+        {
+          icon: "◎",
+          title: "대상 국가",
+          value: "세계 주요 국가",
+        },
+      ],
+      meta: ["baro 통화 포함", "문자 기본 제공"],
+    };
+  }
+
+  if (normalizedCode === "onepass_vip") {
+    return {
+      tiles: [
+        {
+          icon: "◔",
+          title: "데이터량",
+          value: "무제한 (일 5GB 후 최대 400Kbps)",
+        },
+        {
+          icon: "◎",
+          title: "대상 국가",
+          value: "세계 주요 국가",
+        },
+      ],
+      meta: ["baro 통화 포함", "문자 기본 제공"],
+    };
+  }
+
+  if (normalizedCode === "onepass_data_vip") {
+    return {
+      tiles: [
+        {
+          icon: "◔",
+          title: "데이터량",
+          value: "무제한 (일 5GB 후 최대 400Kbps)",
+        },
+        {
+          icon: "◎",
+          title: "대상 국가",
+          value: "세계 주요 국가",
+        },
+      ],
+      meta: ["baro 통화 이용 가능", "문자 기본 제공"],
+    };
+  }
+
+  return {
+    tiles: [
+      {
+        icon: "◔",
+        title: "데이터량",
+        value: productName,
+      },
+      {
+        icon: "◎",
+        title: "대상 국가",
+        value: "세계 주요 국가",
+      },
+    ],
+    meta: ["baro 통화 포함", "문자 기본 제공"],
+  };
+}
+
+function buildBaroSummary(productCode) {
+  const normalizedCode = String(productCode ?? "").toLowerCase();
+
+  if (normalizedCode === "baro_3gb") {
+    return {
+      items: [
+        { icon: "◎", title: "전세계 190개국 지원", desc: "여행지 어디서나 끊김 없는 연결" },
+        { icon: "◔", title: "데이터 3GB 제공", desc: "30일 동안 여유롭게 사용하세요" },
+        { icon: "◡", title: "baro 통화 무제한", desc: "T전화 앱 이용 시 고음질 무료 통화" },
+      ],
+    };
+  }
+
+  if (normalizedCode === "baro_6gb") {
+    return {
+      items: [
+        { icon: "◎", title: "전세계 190개국 지원", desc: "여행지 어디서나 끊김 없는 연결" },
+        { icon: "◔", title: "데이터 6GB 제공", desc: "30일 동안 넉넉하게 사용하세요" },
+        { icon: "◡", title: "baro 통화 무제한", desc: "T전화 앱 이용 시 고음질 무료 통화" },
+      ],
+    };
+  }
+
+  if (normalizedCode === "baro_12gb") {
+    return {
+      items: [
+        { icon: "◎", title: "전세계 190개국 지원", desc: "여행지 어디서나 끊김 없는 연결" },
+        { icon: "◔", title: "데이터 12GB 제공", desc: "30일 동안 넉넉하게 사용하세요" },
+        { icon: "◡", title: "baro 통화 무제한", desc: "T전화 앱 이용 시 고음질 무료 통화" },
+      ],
+    };
+  }
+
+  if (normalizedCode === "baro_24gb") {
+    return {
+      items: [
+        { icon: "◎", title: "전세계 190개국 지원", desc: "여행지 어디서나 끊김 없는 연결" },
+        { icon: "◔", title: "데이터 24GB 제공", desc: "30일 동안 넉넉하게 사용하세요" },
+        { icon: "◡", title: "baro 통화 무제한", desc: "T전화 앱 이용 시 고음질 무료 통화" },
+      ],
+    };
+  }
+
+  if (normalizedCode.startsWith("baro_charge_")) {
+    const amount = normalizedCode.replace("baro_charge_", "").toUpperCase();
+    return {
+      items: [
+        { icon: "◎", title: "전세계 190개국 지원", desc: "여행지 어디서나 데이터를 충전하세요" },
+        { icon: "◔", title: `데이터 ${amount} 충전`, desc: "기존 baro 요금제에 바로 추가됩니다" },
+        { icon: "◡", title: "즉시 가입 처리", desc: "인증 후 바로 충전 가입이 진행됩니다" },
+      ],
+    };
+  }
+
+  return {
+    items: [
+      { icon: "◎", title: "전세계 190개국 지원", desc: "여행지 어디서나 끊김 없는 연결" },
+      { icon: "◔", title: "baro 전용 혜택", desc: "상품별 데이터 혜택이 적용됩니다" },
+      { icon: "◡", title: "baro 통화 이용", desc: "T전화 앱 이용 시 통화 혜택을 확인하세요" },
+    ],
+  };
+}
+
 function buildContent(type, result) {
   const productCode = String(result?.productCode ?? "").toLowerCase();
   const productName = result?.productName || "등록 상품";
   const couponCode = result?.couponCode || "-";
 
   if (type === "onepass") {
+    const onePassSummary = buildOnePassSummary(productCode, productName);
+
     return {
       title: "쿠폰 등록이 완료되었습니다.",
       productName,
-      productDesc:
-        result?.message || "등록한 쿠폰에 맞는 OnePass 요금제를 이어서 가입할 수 있습니다.",
+      productDesc: null,
       guideTitle: "이제 요금제 가입을 진행해 주세요",
       guideDesc:
-        "기본형 또는 기간형 중 원하는 유형을 선택하고 인증을 마치면 요금제 가입이 진행됩니다.",
+        "등록한 OnePass 쿠폰 혜택을 적용하려면 먼저 요금제 가입이 필요합니다.<br />요금제 가입을 위해 원하는 유형을 선택한 뒤 가입하기 버튼을 눌러 주세요.",
       buttonText: "요금제 가입하기",
       cardLabel: "등록 완료 쿠폰",
       cardMode: "onepass",
-      featureTiles: [
-        { title: "상품명", value: productName },
-        { title: "쿠폰 코드", value: couponCode },
-      ],
-      productMeta: ["등록 즉시 사용 가능", "권종별 옵션 선택 가능"],
+      summaryTiles: onePassSummary.tiles,
+      productMeta: onePassSummary.meta,
       productThumb: PRODUCT_THUMB_MAP[productCode] || onePass500Thumb,
     };
   }
 
   if (type === "baro") {
+    const baroSummary = buildBaroSummary(productCode);
+
     return {
       title: "쿠폰 등록이 완료되었습니다.",
       productName,
-      productDesc:
-        result?.message || "등록한 쿠폰에 맞는 baro 요금제를 선택해서 가입할 수 있습니다.",
-      guideTitle: "개시 방식을 선택해 주세요",
+      productDesc: null,
+      guideTitle: "요금제 가입",
       guideDesc:
-        "자동 개시 또는 수동 개시 중 원하는 방식을 선택하고 인증을 마치면 요금제 가입이 진행됩니다.",
+        "등록한 baro 쿠폰 혜택을 적용하려면 먼저 요금제 가입이 필요합니다.<br />요금제 가입을 위해 개시 방식을 선택한 뒤 가입하기 버튼을 눌러 주세요.",
       buttonText: "요금제 가입하기",
       cardLabel: "등록 완료 쿠폰",
       cardMode: "baro",
-      featureList: [
-        { title: "상품명", desc: productName },
-        { title: "쿠폰 코드", desc: couponCode },
-        { title: "가입 방식", desc: "자동 개시 또는 수동 개시 중 선택 가능" },
-      ],
+      summaryItems: baroSummary.items,
       productThumb: PRODUCT_THUMB_MAP[productCode] || baro6GbThumb,
     };
   }
 
   if (type === "baro_charge") {
+    const baroSummary = buildBaroSummary(productCode);
+
     return {
       title: "쿠폰 등록이 완료되었습니다.",
       productName,
-      productDesc:
-        result?.message || "등록한 충전 쿠폰으로 즉시 데이터 충전 가입을 진행할 수 있습니다.",
+      productDesc: null,
       guideTitle: "충전 가입을 진행해 주세요",
-      guideDesc: "충전형 baro 쿠폰은 개시 방식 선택 없이 인증 후 바로 가입 처리됩니다.",
+      guideDesc: "등록한 충전형 baro 쿠폰 혜택을 이용하려면 인증을 완료한 뒤 바로 요금제 가입을 진행해 주세요.",
       buttonText: "충전 가입하기",
       cardLabel: "등록 완료 쿠폰",
       cardMode: "baro",
-      featureList: [
-        { title: "상품명", desc: productName },
-        { title: "쿠폰 코드", desc: couponCode },
-        { title: "처리 방식", desc: "인증 완료 후 즉시 충전 가입 처리" },
-      ],
+      summaryItems: baroSummary.items,
       productThumb: PRODUCT_THUMB_MAP[productCode] || baro6GbThumb,
     };
   }
@@ -282,7 +411,7 @@ function RegisterSuccessPage({ result, onBackHome, onGoHistory, onGoJoinAuth }) 
             <div className="product-card__copy">
               <p className="product-card__eyebrow">{content.cardLabel}</p>
               <strong className="product-card__name">{content.productName}</strong>
-              <p className="product-card__desc">{content.productDesc}</p>
+              {content.productDesc ? <p className="product-card__desc">{content.productDesc}</p> : null}
             </div>
 
             <div className={`product-card__thumb ${isThumbError ? "is-fallback" : ""}`}>
@@ -301,16 +430,21 @@ function RegisterSuccessPage({ result, onBackHome, onGoHistory, onGoJoinAuth }) 
 
           {content.cardMode === "onepass" ? (
             <>
-              <div className="product-card__tile-grid">
-                {content.featureTiles.map((item) => (
-                  <div key={item.title} className="product-card__feature-tile">
-                    <span className="product-card__feature-title">{item.title}</span>
+              <div className="product-card__tile-grid product-card__tile-grid--summary">
+                {content.summaryTiles.map((item) => (
+                  <div key={item.title} className="product-card__feature-tile product-card__feature-tile--summary">
+                    <span className="product-card__feature-icon" aria-hidden="true">
+                      {item.icon}
+                    </span>
+                    <span className="product-card__feature-title product-card__feature-title--summary">
+                      {item.title}
+                    </span>
                     <strong className="product-card__feature-value">{item.value}</strong>
                   </div>
                 ))}
               </div>
 
-              <div className="product-card__meta-list">
+              <div className="product-card__meta-list product-card__meta-list--onepass">
                 {content.productMeta.map((item) => (
                   <span key={item} className="product-card__meta-chip">
                     {item}
@@ -321,11 +455,16 @@ function RegisterSuccessPage({ result, onBackHome, onGoHistory, onGoJoinAuth }) 
           ) : null}
 
           {content.cardMode === "baro" ? (
-            <div className="product-card__info-list">
-              {content.featureList.map((item) => (
-                <div key={item.title} className="product-card__info-item">
-                  <strong className="product-card__info-title">{item.title}</strong>
-                  <p className="product-card__info-desc">{item.desc}</p>
+            <div className="product-card__summary-list">
+              {content.summaryItems.map((item) => (
+                <div key={item.title} className="product-card__summary-item">
+                  <span className="product-card__summary-icon" aria-hidden="true">
+                    {item.icon}
+                  </span>
+                  <div className="product-card__summary-copy">
+                    <strong className="product-card__summary-title">{item.title}</strong>
+                    <p className="product-card__summary-desc">{item.desc}</p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -365,51 +504,55 @@ function RegisterSuccessPage({ result, onBackHome, onGoHistory, onGoJoinAuth }) 
               <span className="success-info-item__label">휴대폰번호</span>
               <strong className="success-info-item__value">{phoneNumberText}</strong>
             </div>
-            {result?.couponCode ? (
-              <div className="success-info-item">
-                <span className="success-info-item__label">쿠폰 코드</span>
-                <strong className="success-info-item__value">{result.couponCode}</strong>
-              </div>
-            ) : null}
           </div>
         </div>
       </section>
 
-      <section className="highlight-card">
-        <strong className="highlight-card__title">{content.guideTitle}</strong>
-        <p className="highlight-card__desc">{content.guideDesc}</p>
-      </section>
+      {(type === "onepass" || type === "baro" || type === "baro_charge") ? (
+        <section className="highlight-card">
+          <strong className="highlight-card__title">{content.guideTitle}</strong>
+          <p
+            className="highlight-card__desc"
+            dangerouslySetInnerHTML={{ __html: content.guideDesc }}
+          />
+        </section>
+      ) : null}
 
       {type === "onepass" ? (
         <section className="join-card">
           <div className="join-card__head">
             <strong className="join-card__title">OnePass 유형 선택</strong>
-            <div className="segmented-control">
-              <button
-                type="button"
-                className={`segmented-control__button ${
-                  onePassStartMode === "basic" ? "is-active" : ""
-                }`}
-                onClick={() => setOnePassStartMode("basic")}
-              >
-                기본형
-              </button>
-              <button
-                type="button"
-                className={`segmented-control__button ${
-                  onePassStartMode === "period" ? "is-active" : ""
-                }`}
-                onClick={() => setOnePassStartMode("period")}
-              >
-                기간형
-              </button>
-            </div>
           </div>
 
           <p className="join-card__subtext">
+            OnePass 요금제 가입을 위해 기본형 또는 기간형 중 원하는 유형을 선택해 주세요.
+          </p>
+
+          <div className="segmented-control segmented-control--spaced">
+            <button
+              type="button"
+              className={`segmented-control__button ${
+                onePassStartMode === "basic" ? "is-active" : ""
+              }`}
+              onClick={() => setOnePassStartMode("basic")}
+            >
+              기본형
+            </button>
+            <button
+              type="button"
+              className={`segmented-control__button ${
+                onePassStartMode === "period" ? "is-active" : ""
+              }`}
+              onClick={() => setOnePassStartMode("period")}
+            >
+              기간형
+            </button>
+          </div>
+
+          <p className="join-card__notice">
             {onePassStartMode === "period"
-              ? "선택한 개시일 기준으로 OnePass 혜택이 적용됩니다."
-              : "첫 데이터 사용 시점부터 OnePass 혜택이 자동 적용됩니다."}
+              ? "기간형은 선택한 개시일 기준으로 혜택이 적용됩니다."
+              : "기본형은 첫 데이터 사용 시점부터 혜택이 자동 적용됩니다."}
           </p>
 
           {onePassStartMode === "period" ? (
@@ -532,10 +675,7 @@ function RegisterSuccessPage({ result, onBackHome, onGoHistory, onGoJoinAuth }) 
       {type === "baro" ? (
         <section className="join-card">
           <div className="join-card__head join-card__head--stack">
-            <strong className="join-card__title">baro 개시 방식 선택</strong>
-            <p className="join-card__subtext">
-              자동 개시는 해외 접속 시 바로 사용 가능하고, 수동 개시는 원하는 시점에 직접 시작할 수 있습니다.
-            </p>
+            <strong className="join-card__title">baro 요금제 시작 옵션</strong>
           </div>
 
           <div className="option-grid">
@@ -545,7 +685,9 @@ function RegisterSuccessPage({ result, onBackHome, onGoHistory, onGoJoinAuth }) 
               onClick={() => setBaroStartMode("auto")}
             >
               <strong className="option-tile__title">자동 개시</strong>
-              <span className="option-tile__desc">해외 접속 시 바로 사용 시작</span>
+              <span className="option-tile__desc">
+                현재 선택한 데이터 용량을 출국할 때마다 자동 적용
+              </span>
             </button>
 
             <button
@@ -554,7 +696,9 @@ function RegisterSuccessPage({ result, onBackHome, onGoHistory, onGoJoinAuth }) 
               onClick={() => setBaroStartMode("manual")}
             >
               <strong className="option-tile__title">수동 개시</strong>
-              <span className="option-tile__desc">원하는 시점에 직접 사용 시작</span>
+              <span className="option-tile__desc">
+                출국할 때마다 필요한 데이터 용량을 직접 선택해 사용
+              </span>
             </button>
           </div>
 

@@ -1011,14 +1011,14 @@ section {
 }
 
 .result-icon {
-  width: 72px;
-  height: 72px;
-  margin: 0 auto 14px;
+  width: 50px;
+  height: 50px;
+  margin: 0 auto 12px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.125rem;
   font-weight: 900;
   color: #fff;
 }
@@ -1032,8 +1032,8 @@ section {
 }
 
 .result-title {
-  font-size: 2.25rem;
-  line-height: 1.22;
+  font-size: 24px;
+  line-height: 1.35;
   font-weight: 900;
   letter-spacing: -0.05em;
 }
@@ -1083,11 +1083,11 @@ section {
 }
 
 .product-card__thumb {
-  width: 64px;
-  height: 64px;
-  border-radius: 18px;
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
   background: linear-gradient(135deg, #dbe7ff 0%, #c4d7ff 100%);
-  flex: 0 0 64px;
+  flex: 0 0 60px;
   overflow: hidden;
 }
 
@@ -1121,7 +1121,13 @@ section {
 
 .product-card__eyebrow {
   margin-bottom: 6px;
-  font-size: 0.6875rem;
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #eef4ff;
+  font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   color: var(--primary);
@@ -1149,10 +1155,33 @@ section {
   margin-top: 14px;
 }
 
+.product-card__tile-grid--summary {
+  margin-top: 14px;
+  gap: 8px;
+}
+
 .product-card__feature-tile {
   padding: 14px 12px;
   border-radius: 18px;
   background: #f4f7fd;
+}
+
+.product-card__feature-tile--summary {
+  min-height: 112px;
+  padding: 14px 12px;
+}
+
+.product-card__feature-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #dce8ff;
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 900;
 }
 
 .product-card__feature-title {
@@ -1162,12 +1191,16 @@ section {
   line-height: 1.45;
 }
 
+.product-card__feature-title--summary {
+  margin-top: 10px;
+}
+
 .product-card__feature-value {
   display: block;
   margin-top: 4px;
   color: #1f2937;
-  font-size: 0.9375rem;
-  line-height: 1.45;
+  font-size: 0.875rem;
+  line-height: 1.4;
   font-weight: 800;
 }
 
@@ -1178,15 +1211,19 @@ section {
   margin-top: 10px;
 }
 
+.product-card__meta-list--onepass {
+  margin-top: 12px;
+}
+
 .product-card__meta-chip {
   display: inline-flex;
   align-items: center;
-  min-height: 28px;
-  padding: 0 9px;
+  min-height: 26px;
+  padding: 0 8px;
   border-radius: 999px;
   background: #f2f6fd;
   color: #445169;
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   font-weight: 700;
 }
 
@@ -1195,6 +1232,60 @@ section {
   padding: 14px 14px 4px;
   border-radius: 18px;
   background: #f7f9fd;
+}
+
+.product-card__summary-list {
+  margin-top: 16px;
+  padding: 16px 16px 8px;
+  border-radius: 20px;
+  background: #f7f9fd;
+}
+
+.product-card__summary-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding-bottom: 12px;
+}
+
+.product-card__summary-item + .product-card__summary-item {
+  margin-top: 12px;
+  border-top: 1px solid #e7edf8;
+  padding-top: 12px;
+}
+
+.product-card__summary-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  color: var(--primary);
+  background: #dce8ff;
+  font-size: 0.75rem;
+  font-weight: 900;
+  flex: 0 0 24px;
+}
+
+.product-card__summary-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.product-card__summary-title {
+  display: block;
+  color: #1f2937;
+  font-size: 1rem;
+  line-height: 1.35;
+  font-weight: 800;
+}
+
+.product-card__summary-desc {
+  margin-top: 3px;
+  color: #667085;
+  font-size: 0.875rem;
+  line-height: 1.55;
 }
 
 .product-card__info-item + .product-card__info-item {
@@ -1307,14 +1398,26 @@ section {
   background: #eef3fb;
 }
 
+.segmented-control--spaced {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+  margin: 14px auto 0;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 22px;
+  background: #eef3fb;
+}
+
 .segmented-control__button {
-  min-width: 68px;
-  height: 34px;
+  width: 100%;
+  min-width: 0;
+  height: 46px;
   padding: 0 14px;
   border-radius: 999px;
   color: #667085;
-  font-size: 0.875rem;
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: 800;
 }
 
 .segmented-control__button.is-active {
