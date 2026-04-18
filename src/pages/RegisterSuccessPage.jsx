@@ -196,9 +196,9 @@ function buildBaroSummary(productCode) {
     const amount = normalizedCode.replace("baro_charge_", "").toUpperCase();
     return {
       items: [
-        { icon: "◎", title: "전세계 190개국 지원", desc: "여행지 어디서나 데이터를 충전하세요" },
-        { icon: "◔", title: `데이터 ${amount} 충전`, desc: "기존 baro 요금제에 바로 추가됩니다" },
-        { icon: "◡", title: "즉시 가입 처리", desc: "인증 후 바로 충전 가입이 진행됩니다" },
+        { icon: "◔", title: `데이터 ${amount} 추가 충전`, desc: `이용 중인 baro 요금제 데이터에 ${amount}가 추가됩니다` },
+        { icon: "◎", title: "baro 요금제 가입자 전용", desc: "baro 3/6/12/24GB 이용 중일 때만 가입할 수 있습니다" },
+        { icon: "◡", title: "기존 이용 기간과 동일", desc: "충전 데이터는 현재 이용 중인 baro 요금제 기간 안에서 사용됩니다" },
       ],
     };
   }
@@ -210,6 +210,38 @@ function buildBaroSummary(productCode) {
       { icon: "◡", title: "baro 통화 이용", desc: "T전화 앱 이용 시 통화 혜택을 확인하세요" },
     ],
   };
+}
+
+function formatPriceLabel(value) {
+  const digits = String(value ?? "").replace(/\D/g, "");
+  if (!digits) return null;
+  return `${Number(digits).toLocaleString("ko-KR")}원`;
+}
+
+function resolveVoucherAmountLabel(result) {
+  const candidates = [
+    result?.priceLabel,
+    result?.couponName,
+    result?.productName,
+    result?.productCode,
+  ];
+
+  for (const candidate of candidates) {
+    const text = String(candidate ?? "").trim();
+    if (!text) continue;
+
+    const amountWithWon = text.match(/(\d[\d,]*)\s*원/);
+    if (amountWithWon) {
+      return formatPriceLabel(amountWithWon[1]);
+    }
+
+    const trailingDigits = text.match(/(\d[\d,]*)$/);
+    if (trailingDigits) {
+      return formatPriceLabel(trailingDigits[1]);
+    }
+  }
+
+  return null;
 }
 
 function buildContent(type, result) {
@@ -262,7 +294,7 @@ function buildContent(type, result) {
       productName,
       productDesc: null,
       guideTitle: "충전 가입을 진행해 주세요",
-      guideDesc: "등록한 충전형 baro 쿠폰 혜택을 이용하려면 인증을 완료한 뒤 바로 요금제 가입을 진행해 주세요.",
+      guideDesc: "등록한 baro 충전 쿠폰 혜택을 적용하려면 이용 중인 baro 요금제에 충전 가입이 필요합니다.<br />인증을 완료한 뒤 충전 가입하기 버튼을 눌러 주세요.",
       buttonText: "충전 가입하기",
       cardLabel: "등록 완료 쿠폰",
       cardMode: "baro",
@@ -274,17 +306,16 @@ function buildContent(type, result) {
   return {
     title: "쿠폰 등록이 완료되었습니다.",
     productName,
-    productDesc: result?.message || "금액권 쿠폰이 정상 등록되어 바로 사용할 수 있습니다.",
-    guideTitle: "금액권 등록이 완료되었습니다",
-    guideDesc:
-      "별도 요금제 가입 없이 T 로밍 서비스 이용 시 등록된 금액권에서 우선 차감됩니다.",
+    amountLabel: resolveVoucherAmountLabel(result),
+    productDesc: null,
+    guideTitle: null,
+    guideDesc: null,
     buttonText: "등록내역 확인하기",
     cardLabel: "등록 완료 쿠폰",
     cardMode: "voucher",
     productMeta: ["등록 즉시 사용 가능", "추가 가입 절차 없음"],
     voucherNotes: [
       "해외 로밍 이용 요금 결제 시 등록된 금액권에서 우선 차감됩니다.",
-      "금액권 정보와 사용 내역은 등록 내역 화면에서 확인할 수 있습니다.",
     ],
     productThumb: voucherThumb,
   };
@@ -472,6 +503,10 @@ function RegisterSuccessPage({ result, onBackHome, onGoHistory, onGoJoinAuth }) 
 
           {content.cardMode === "voucher" ? (
             <>
+              {content.amountLabel ? (
+                <p className="product-card__amount">등록 금액 {content.amountLabel}</p>
+              ) : null}
+
               <div className="product-card__meta-list">
                 {content.productMeta.map((item) => (
                   <span key={item} className="product-card__meta-chip">
@@ -508,7 +543,7 @@ function RegisterSuccessPage({ result, onBackHome, onGoHistory, onGoJoinAuth }) 
         </div>
       </section>
 
-      {(type === "onepass" || type === "baro" || type === "baro_charge") ? (
+      {(type === "onepass" || type === "baro" || type === "baro_charge") && content.guideTitle ? (
         <section className="highlight-card">
           <strong className="highlight-card__title">{content.guideTitle}</strong>
           <p
