@@ -75,10 +75,10 @@ function MainPage({ onSubmitRegister }) {
     <main className="page-content">
       <section className="hero">
         <p className="hero-badge">T-Roaming coupon</p>
-        <h1 className="hero-title">
-          준비하신 쿠폰을
+        <h1 className="hero-title hero-title--register">
+          T 로밍쿠폰으로
           <br />
-          <span>지금 등록하세요.</span>
+          <span>SKT T 로밍을 편하게 이용하세요</span>
         </h1>
         <p className="hero-desc">
           보유하신 T로밍 쿠폰 번호를 입력하시면 바로 로밍 혜택을 받으실 수 있습니다.
@@ -112,10 +112,9 @@ function MainPage({ onSubmitRegister }) {
               className="form-input"
               value={phoneNumber}
               onChange={(event) => setPhoneNumber(event.target.value.replace(/\D/g, ""))}
-              placeholder="등록할 휴대폰번호를 입력하세요"
+              placeholder="휴대폰번호를 입력하세요"
               maxLength={11}
             />
-            <p className="form-text">본인 휴대폰번호를 '-' 없이 입력해주세요.</p>
           </div>
 
           <label className="agree-row agree-row--interactive">

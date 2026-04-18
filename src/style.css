@@ -92,7 +92,7 @@ section {
 }
 
 .page-content {
-  padding: 28px 20px calc(var(--bottom-nav-height) + 28px);
+  padding: 28px 20px calc(var(--bottom-nav-height) + 52px);
   text-align: left;
 }
 
@@ -137,6 +137,11 @@ section {
 
 .hero-title span {
   color: var(--primary);
+}
+
+.hero-title--register {
+  font-size: 31px;
+  line-height: 1.22;
 }
 
 .hero-title--sm {
@@ -859,8 +864,9 @@ section {
 .promo-banner {
   position: relative;
   overflow: hidden;
-  min-height: 206px;
+  min-height: 224px;
   margin-top: 28px;
+  margin-bottom: 8px;
   border-radius: 28px;
   background: #dbe7ff;
 }
@@ -874,7 +880,7 @@ section {
 .promo-banner__slide {
   position: relative;
   flex: 0 0 100%;
-  min-height: 206px;
+  min-height: 224px;
   background-position: center right;
   background-size: cover;
   background-repeat: no-repeat;
@@ -889,8 +895,8 @@ section {
 .promo-banner__text {
   position: absolute;
   left: 24px;
-  right: 24px;
-  bottom: 24px;
+  right: 88px;
+  bottom: 44px;
   z-index: 1;
   color: #fff;
   text-align: left;
@@ -905,8 +911,8 @@ section {
 .promo-banner__title {
   display: block;
   margin-top: 8px;
-  font-size: 2rem;
-  line-height: 1.28;
+  font-size: 1.85rem;
+  line-height: 1.24;
   font-weight: 800;
   letter-spacing: -0.03em;
 }
@@ -915,7 +921,7 @@ section {
   position: absolute;
   left: 16px;
   right: 16px;
-  bottom: 14px;
+  bottom: 16px;
   z-index: 2;
   display: flex;
   align-items: center;
@@ -1803,11 +1809,11 @@ section {
   }
 
   .promo-banner {
-    min-height: 186px;
+    min-height: 204px;
   }
 
   .promo-banner__title {
-    font-size: 1.75rem;
+    font-size: 1.55rem;
   }
 
   .result-title,
