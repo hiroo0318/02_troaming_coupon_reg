@@ -1354,7 +1354,7 @@ async function handleMockSmsVerify(payload: JsonMap) {
   if (authCode !== FIXED_SMS_AUTH_CODE) {
     const hasReachedMax = nextAttempts >= SMS_VERIFY_MAX_ATTEMPTS;
     await updateSmsAuthLog(Number(log.id), {
-      status: hasReachedMax ? "sent" : "sent",
+      status: "sent",
       verified_attempt_count: nextAttempts,
       last_attempted_at: nowIso,
       failure_reason: hasReachedMax ? "max_attempts_exceeded" : "invalid_code",
