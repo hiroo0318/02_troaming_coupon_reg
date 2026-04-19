@@ -270,6 +270,19 @@ function resolveVoucherAmountLabel(result) {
   return null;
 }
 
+function renderGuideDescLines(text) {
+  return String(text ?? "")
+    .split(/<br\s*\/?>/i)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line, index, lines) => (
+      <React.Fragment key={`${line}-${index}`}>
+        {line}
+        {index < lines.length - 1 ? <br /> : null}
+      </React.Fragment>
+    ));
+}
+
 function buildContent(type, result) {
   const productCode = String(result?.productCode ?? "").toLowerCase();
   const productName = result?.productName || "등록 상품";
@@ -446,7 +459,6 @@ function RegisterSuccessPage({ result, onBackHome, onGoHistory, onGoJoinAuth }) 
         detailLabel: "적용 시점",
         detailValue: "첫 데이터 사용 시점부터 자동 적용",
         startMode: onePassStartMode,
-        useYt: false,
       });
       return;
     }
@@ -459,7 +471,6 @@ function RegisterSuccessPage({ result, onBackHome, onGoHistory, onGoJoinAuth }) 
         detailLabel: "처리 방식",
         detailValue: "인증 완료 후 즉시 충전 가입 처리",
         startMode: null,
-        useYt: false,
       });
       return;
     }
@@ -474,7 +485,6 @@ function RegisterSuccessPage({ result, onBackHome, onGoHistory, onGoJoinAuth }) 
           ? "해외 접속 시 바로 사용 시작"
           : "원하는 시점에 직접 사용 시작",
       startMode: baroStartMode,
-      useYt: false,
     });
   };
 
@@ -597,10 +607,7 @@ function RegisterSuccessPage({ result, onBackHome, onGoHistory, onGoJoinAuth }) 
       {(type === "onepass" || type === "baro" || type === "baro_charge") && content.guideTitle ? (
         <section className="highlight-card">
           <strong className="highlight-card__title">{content.guideTitle}</strong>
-          <p
-            className="highlight-card__desc"
-            dangerouslySetInnerHTML={{ __html: content.guideDesc }}
-          />
+          <p className="highlight-card__desc">{renderGuideDescLines(content.guideDesc)}</p>
         </section>
       ) : null}
 

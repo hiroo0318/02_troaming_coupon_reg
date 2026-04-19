@@ -114,7 +114,6 @@ function App() {
         productCode: registerResult?.productCode,
         category: registerResult?.category,
         startMode: payload?.startMode,
-        useYt: Boolean(payload?.useYt),
       });
 
       goJoinComplete({
@@ -150,9 +149,8 @@ function App() {
             onBackHome={goRegisterHome}
             onGoHistory={() =>
               registerResult?.phoneNumber
-                ? handleHistoryPrepare({
+                ? goHistoryVerify({
                     phoneNumber: registerResult.phoneNumber,
-                    agreePrivacy: true,
                   })
                 : goHistoryVerify()
             }

@@ -18,6 +18,14 @@ const supabaseAdmin = createClient(
   },
 );
 
+function requireEnv(name: string) {
+  const value = Deno.env.get(name)?.trim();
+  if (!value) {
+    throw new Error(`${name} 환경변수가 설정되지 않았습니다.`);
+  }
+  return value;
+}
+
 const APIHUB_URL =
   Deno.env.get("ROAMING_APIHUB_URL") ??
   "https://gwcoupon.sktcoupon.co.kr/gateway/apihubCspSend.api";
@@ -27,15 +35,14 @@ const SUBSCRIPTION_API_CODE = Deno.env.get("ROAMING_SUBSCRIPTION_API_CODE") ?? "
 const COUPON_REGISTER_URL =
   Deno.env.get("ROAMING_COUPON_REGISTER_URL") ?? "https://ifcoupon.sktcoupon.co.kr/v1.1/regist.do";
 const COUPON_ISSU_NO = Deno.env.get("ROAMING_COUPON_ISSU_NO") ?? "RF";
-const COUPON_CUST_NO = Deno.env.get("ROAMING_COUPON_CUST_NO") ?? "907203";
-const COUPON_AUTH_KEY =
-  Deno.env.get("ROAMING_COUPON_AUTH_KEY") ?? "MmQ5ODY4MDBiYzgzN2E1YTA3NWE2ZmNmN77862IxMWUyMmI=";
-const COUPON_AES_KEY =
-  Deno.env.get("ROAMING_COUPON_AES_KEY") ?? "2d986800b9037a5a07572fcf7b11e03b";
-const SERVICE_INFO_AES_KEY = Deno.env.get("ROAMING_SERVICE_INFO_AES_KEY") ?? "xhcjqhp95ou8f0za";
+const COUPON_CUST_NO = requireEnv("ROAMING_COUPON_CUST_NO");
+const COUPON_AUTH_KEY = requireEnv("ROAMING_COUPON_AUTH_KEY");
+const COUPON_AES_KEY = requireEnv("ROAMING_COUPON_AES_KEY");
+const SERVICE_INFO_AES_KEY = requireEnv("ROAMING_SERVICE_INFO_AES_KEY");
 const SERVICE_INFO_AES_IV = "ABCDEFGHIJKLMNOP";
 const FIXED_SMS_AUTH_CODE = Deno.env.get("ROAMING_FIXED_AUTH_CODE") ?? "123456";
 const SMS_AUTH_EXPIRE_SECONDS = 180;
+const SMS_VERIFY_MAX_ATTEMPTS = 5;
 const SUBSCRIBE_MAX_ATTEMPTS = 3;
 const EXTERNAL_API_TIMEOUT_MS = 15000;
 
@@ -88,18 +95,9 @@ function sanitizeCouponNumber(value: unknown) {
   return String(value ?? "").trim().slice(0, 32);
 }
 
-function sanitizeLookupPin(value: unknown) {
-  return String(value ?? "").replace(/\D/g, "").slice(0, 6);
-}
-
 function sanitizeStartMode(value: unknown) {
   const normalized = String(value ?? "").trim().toLowerCase();
   return normalized || null;
-}
-
-function sanitizeEmail(value: unknown) {
-  const email = String(value ?? "").trim().toLowerCase();
-  return email ? email.slice(0, 120) : null;
 }
 
 function requiresSubscription(category: string | null, productCode: string | null) {
@@ -215,21 +213,6 @@ function hexToBytes(value: string) {
   }
 
   return bytes;
-}
-
-function keyToBytes(value: string) {
-  const normalized = value.trim();
-
-  if (/^[0-9a-fA-F]+$/.test(normalized) && normalized.length % 2 === 0) {
-    return hexToBytes(normalized);
-  }
-
-  return new TextEncoder().encode(normalized);
-}
-
-async function sha256(value: string) {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 function stripPkcs7Padding(bytes: Uint8Array) {
@@ -772,13 +755,6 @@ async function rollbackSubscribedNaCodes(params: {
   return { logs, failedCodes };
 }
 
-async function resolveYtEligibility(_phoneNumber: string) {
-  // TODO: 신규 YT 대상자 조회 API가 준비되면 아래 조회를 활성화해서 실제 대상 여부를 판별합니다.
-  // const response = await callApiHub(YT_TARGET_API_CODE, { SVC_NUM: _phoneNumber });
-  // return response.ok && response.header.resultCode === "00" && extractBodyValue(response.text, "YT_YN") === "Y";
-  return false;
-}
-
 async function subscribeProduct(params: {
   registrationId: number;
   phoneNumber: string;
@@ -786,12 +762,11 @@ async function subscribeProduct(params: {
   productCode: string;
   category: string;
   startMode?: string | null;
-  useYt: boolean; // true면 YT 요금제 코드로 가입. 현재는 API 미승인으로 항상 false 사용
   existingNaCodes: string[];
 }) {
-  const { registrationId, phoneNumber, couponNumber, productCode, category, startMode, useYt, existingNaCodes } = params;
+  const { registrationId, phoneNumber, couponNumber, productCode, category, startMode, existingNaCodes } = params;
   const allRows = await getNaCodeRows(productCode);
-  const naType = useYt ? "yt" : "normal";
+  const naType = "normal";
   const targetRows = allRows.filter((row) => {
     if (String(row.na_type ?? "normal") !== naType) {
       return false;
@@ -1250,9 +1225,6 @@ async function handleSubscribe(payload: JsonMap) {
     throw new Error("baro 1/2/3GB 충전 상품은 baro 활성화 요금제 가입 후 이용할 수 있습니다.");
   }
 
-  // TODO: YT 대상자 조회 API 연동 전까지는 항상 일반 요금제(normal)로 가입합니다.
-  // const useYt = await resolveYtEligibility(phoneNumber);
-  const useYt = false;
   const subscriptionResult = await subscribeProduct({
     registrationId,
     phoneNumber,
@@ -1260,7 +1232,6 @@ async function handleSubscribe(payload: JsonMap) {
     productCode,
     category,
     startMode,
-    useYt,
     existingNaCodes: serviceInfo.existingNaCodes,
   });
 
@@ -1270,7 +1241,6 @@ async function handleSubscribe(payload: JsonMap) {
     phoneNumber,
     productCode,
     category,
-    useYt,
     alreadySubscribed: subscriptionResult.alreadySubscribed,
     message: subscriptionResult.message,
     logs: subscriptionResult.logs.map((log) => ({
@@ -1354,7 +1324,19 @@ async function handleMockSmsVerify(payload: JsonMap) {
   assert(String(log.phone_number ?? "") === phoneNumber, "인증 요청 정보가 일치하지 않습니다.");
   assert(String(log.purpose ?? "") === purpose, "인증 요청 정보가 일치하지 않습니다.");
 
-  const nextAttempts = Number(log.verified_attempt_count ?? 0) + 1;
+  const currentAttempts = Number(log.verified_attempt_count ?? 0);
+  if (currentAttempts >= SMS_VERIFY_MAX_ATTEMPTS) {
+    await updateSmsAuthLog(Number(log.id), {
+      status: "sent",
+      verified_attempt_count: currentAttempts,
+      last_attempted_at: new Date().toISOString(),
+      failure_reason: "max_attempts_exceeded",
+    });
+
+    throw new Error("인증번호 입력 가능 횟수를 초과했습니다. 인증번호를 다시 요청해주세요.");
+  }
+
+  const nextAttempts = currentAttempts + 1;
   const nowIso = new Date().toISOString();
   const expired = !log.expires_at || new Date(String(log.expires_at)).getTime() <= Date.now();
 
@@ -1370,14 +1352,19 @@ async function handleMockSmsVerify(payload: JsonMap) {
   }
 
   if (authCode !== FIXED_SMS_AUTH_CODE) {
+    const hasReachedMax = nextAttempts >= SMS_VERIFY_MAX_ATTEMPTS;
     await updateSmsAuthLog(Number(log.id), {
-      status: "sent",
+      status: hasReachedMax ? "sent" : "sent",
       verified_attempt_count: nextAttempts,
       last_attempted_at: nowIso,
-      failure_reason: "invalid_code",
+      failure_reason: hasReachedMax ? "max_attempts_exceeded" : "invalid_code",
     });
 
-    throw new Error("인증번호를 다시 확인해주세요.");
+    throw new Error(
+      hasReachedMax
+        ? "인증번호 입력 가능 횟수를 초과했습니다. 인증번호를 다시 요청해주세요."
+        : "인증번호를 다시 확인해주세요.",
+    );
   }
 
   await updateSmsAuthLog(Number(log.id), {

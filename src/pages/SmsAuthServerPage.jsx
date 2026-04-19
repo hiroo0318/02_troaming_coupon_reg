@@ -2,6 +2,8 @@
 import { formatPhoneNumber } from "../lib/format";
 import { requestMockSmsAuth, verifyMockSmsAuth } from "../lib/roamingApi";
 
+const SMS_VERIFY_MAX_ATTEMPTS_MESSAGE = "인증번호 입력 가능 횟수를 초과했습니다. 인증번호를 다시 요청해주세요.";
+
 function formatRemainingTime(seconds) {
   const minute = String(Math.floor(seconds / 60)).padStart(2, "0");
   const second = String(seconds % 60).padStart(2, "0");
@@ -35,6 +37,7 @@ function SmsAuthServerPage({ mode = "join", phoneNumber = "", onBack, onVerified
   }, [expiresAt, now]);
 
   const isExpired = isCodeSent && remainingSeconds === 0;
+  const isAttemptLocked = errorMessage === SMS_VERIFY_MAX_ATTEMPTS_MESSAGE;
 
   useEffect(() => {
     if (!expiresAt || isExpired) {
@@ -72,7 +75,7 @@ function SmsAuthServerPage({ mode = "join", phoneNumber = "", onBack, onVerified
   };
 
   const handleVerify = async () => {
-    if (!isCodeSent || authCode.length !== 6 || isExpired || isVerifying) return;
+    if (!isCodeSent || authCode.length !== 6 || isExpired || isAttemptLocked || isVerifying) return;
 
     setIsVerifying(true);
     setErrorMessage("");
@@ -138,6 +141,8 @@ function SmsAuthServerPage({ mode = "join", phoneNumber = "", onBack, onVerified
             {isCodeSent
               ? isExpired
                 ? "인증번호 입력 시간이 종료되었습니다. 인증번호 재발송을 클릭해 주세요."
+                : isAttemptLocked
+                  ? SMS_VERIFY_MAX_ATTEMPTS_MESSAGE
                 : `${formatRemainingTime(remainingSeconds)} 내에 인증번호를 입력해주세요.`
               : "먼저 인증번호를 요청한 뒤 인증을 진행해주세요."}
           </p>
@@ -148,7 +153,7 @@ function SmsAuthServerPage({ mode = "join", phoneNumber = "", onBack, onVerified
           <button
             type="button"
             className="btn-primary btn-primary--compact"
-            disabled={!isCodeSent || authCode.length !== 6 || isExpired || isVerifying}
+            disabled={!isCodeSent || authCode.length !== 6 || isExpired || isAttemptLocked || isVerifying}
             onClick={handleVerify}
           >
             {isVerifying ? "확인중..." : mode === "join" ? "가입 진행" : "인증 확인"}
